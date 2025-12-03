@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "homegui",
+  "version": "1.0.0",
+  "name": "Home GUI",
+  "description": "GUI pour accéder rapidement à vos homes",
+  "authors": ["Vous"],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/homegui/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.example.homegui.HomeGuiClient"
+    ]
+  },
+  "mixins": [
+    "homegui.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.4",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
