@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "name": "Home GUI",
   "description": "GUI pour accéder rapidement à vos homes",
-  "authors": ["Vous"],
+  "authors": ["MaxLananas"],
   "contact": {},
   "license": "MIT",
   "icon": "assets/homegui/icon.png",
@@ -18,8 +18,8 @@
     "homegui.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=0.16.0",
-    "minecraft": "~1.21.4",
+    "fabricloader": ">=0.19.0",
+    "minecraft": "~1.21.10",
     "java": ">=21",
     "fabric-api": "*"
   }
