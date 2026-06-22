@@ -34,9 +34,11 @@ loom {
 }
 
 dependencies {
-    // Minecraft + Mappings
+    // Minecraft
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings loom.officialMojangMappings()
+
+    // Yarn Mappings
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 
     // Fabric Loader
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
@@ -44,7 +46,7 @@ dependencies {
     // Fabric API
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    // Gson (déjà inclus dans Minecraft, mais au cas où)
+    // Gson
     implementation 'com.google.code.gson:gson:2.10.1'
 }
 
