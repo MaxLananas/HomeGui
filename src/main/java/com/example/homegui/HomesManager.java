@@ -1,6 +1,6 @@
 package com.example.homegui;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,11 +35,11 @@ public class HomesManager {
     }
 
     public void requestHomes() {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client.player != null) {
             isWaitingForResponse = true;
             lastRequestTime = System.currentTimeMillis();
-            client.player.networkHandler.sendChatCommand("homes");
+            client.player.connection.sendChat("/homes");
             LOGGER.info("[HomeGUI] Demande de la liste des homes...");
         }
     }
@@ -60,7 +60,6 @@ public class HomesManager {
     }
 
     private boolean parseHomesMessage(String message) {
-        // Homes entre crochets [home1] [home2]
         Matcher bm = BRACKET_PATTERN.matcher(message);
         List<String> found = new ArrayList<>();
         while (bm.find()) {
@@ -72,7 +71,6 @@ public class HomesManager {
             homes.addAll(found);
             return true;
         }
-        // Patterns standards
         for (Pattern p : HOME_PATTERNS) {
             Matcher m = p.matcher(message);
             if (m.find()) {
@@ -80,7 +78,6 @@ public class HomesManager {
                 return !homes.isEmpty();
             }
         }
-        // Fallback
         if (message.toLowerCase().contains("home")) {
             String[] parts = message.split("[:,]");
             if (parts.length > 1) {
@@ -105,9 +102,9 @@ public class HomesManager {
     }
 
     public void teleportToHome(String homeName) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client.player != null) {
-            client.player.networkHandler.sendChatCommand("home " + homeName);
+            client.player.connection.sendChat("/home " + homeName);
             client.setScreen(null);
         }
     }
