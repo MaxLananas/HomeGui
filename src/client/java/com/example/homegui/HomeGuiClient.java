@@ -8,7 +8,6 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,11 +21,11 @@ public class HomeGuiClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        // Charger la config et la langue
+        // Charger config + langue
         ModConfig.getInstance();
         LangManager.getInstance().loadFromConfig();
 
-        // Enregistrer la touche avec la nouvelle API (Identifier au lieu de String)
+        // Enregistrement du keybind
         openGuiKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.homegui.open_gui",
                 InputUtil.Type.KEYSYM,
@@ -44,6 +43,6 @@ public class HomeGuiClient implements ClientModInitializer {
             }
         });
 
-        LOGGER.info("[HomeGUI] Mod initialisé avec succès !");
+        LOGGER.info("[HomeGUI] Initialisé pour Minecraft 1.21.10 ✓");
     }
 }
