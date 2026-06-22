@@ -2,9 +2,10 @@ package com.example.homegui.screen;
 
 import com.example.homegui.HomesManager;
 import com.example.homegui.config.ModConfig;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.Click;
+import net.minecraft.client.gui.screen.KeyInput;
 import net.minecraft.text.Text;
 
 import java.util.List;
@@ -21,7 +22,7 @@ public class HistoryScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        renderBackground(context);
+        context.fill(0, 0, width, height, 0xCC000000);
 
         List<ModConfig.HistoryEntry> history = ModConfig.getInstance().getHistory();
 
@@ -54,9 +55,7 @@ public class HistoryScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (super.mouseClicked(mouseX, mouseY, button)) return true;
-
+    public boolean mouseClicked(Click click, boolean doubleClick) {
         if (hoveredIndex >= 0) {
             List<ModConfig.HistoryEntry> history = ModConfig.getInstance().getHistory();
             if (hoveredIndex < history.size()) {
@@ -67,17 +66,16 @@ public class HistoryScreen extends Screen {
             }
         }
 
-        MinecraftClient.getInstance().setScreen(parent);
-        return true;
+        return super.mouseClicked(click, doubleClick);
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == 256) {
-            MinecraftClient.getInstance().setScreen(parent);
+    public boolean keyPressed(KeyInput input) {
+        if (input.keyCode() == 256) {
+            client.setScreen(parent);
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(input);
     }
 
     @Override
