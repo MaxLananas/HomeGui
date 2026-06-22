@@ -1,31 +1,44 @@
-@Override
-public boolean mouseClicked(double mouseX, double mouseY, int button) {
-    if (super.mouseClicked(mouseX, mouseY, button)) return true;
+package com.example.homegui.screen;
 
-    int panelWidth = Math.min(400, this.width - 60);
-    int panelHeight = this.height - 80;
-    int panelX = (this.width - panelWidth) / 2;
-    int panelY = 40;
-    int centerX = panelX + panelWidth / 2;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.text.Text;
 
-    int btnWidth = 100;
-    int btnHeight = 26;
-    int btnX = centerX - btnWidth / 2;
-    int btnY = panelY + panelHeight - 45;
+public class StatsScreen extends Screen {
 
-    if (mouseX >= btnX && mouseX <= btnX + btnWidth && mouseY >= btnY && mouseY <= btnY + btnHeight) {
+    private final Screen parent;
+
+    public StatsScreen(Screen parent) {
+        super(Text.literal("Stats"));
+        this.parent = parent;
+    }
+
+    @Override
+    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        renderBackground(context);
+        context.drawCenteredTextWithShadow(textRenderer, Text.literal("Stats"), width / 2, 40, 0xFFFFFF);
+        super.render(context, mouseX, mouseY, delta);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (super.mouseClicked(mouseX, mouseY, button)) return true;
         MinecraftClient.getInstance().setScreen(parent);
         return true;
     }
 
-    return false;
-}
-
-@Override
-public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-    if (keyCode == 256) {
-        MinecraftClient.getInstance().setScreen(parent);
-        return true;
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == 256) {
+            MinecraftClient.getInstance().setScreen(parent);
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
-    return super.keyPressed(keyCode, scanCode, modifiers);
+
+    @Override
+    public boolean shouldPause() {
+        return false;
+    }
 }
