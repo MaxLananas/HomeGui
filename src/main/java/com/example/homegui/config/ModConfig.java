@@ -3,305 +3,189 @@ package com.example.homegui.config;
 import com.google.gson.*;
 import net.fabricmc.loader.api.FabricLoader;
 
-import java.io.*;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
 public class ModConfig {
-    
+
     private static ModConfig instance;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final Path CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("homegui.json");
-    
-    // Données
-    private int themeIndex = 0;
-    private boolean compactMode = false;
-    private String language = "en";
-    private Set<String> favorites = new HashSet<>();
-    private Map<String, Integer> useCounts = new HashMap<>();
-    private List<HistoryEntry> history = new ArrayList<>();
-    private int totalTeleports = 0;
-    
-    private ModConfig() {
-        load();
-    }
-    
+    private static final Path CONFIG_PATH =
+            FabricLoader.getInstance().getConfigDir().resolve("homegui.json");
+
+    private int     themeIndex     = 0;
+    private boolean compactMode    = false;
+    private String  language       = "en";
+    private int     totalTeleports = 0;
+
+    private final Set<String>         favorites = new HashSet<>();
+    private final Map<String,Integer> useCounts = new HashMap<>();
+    private List<HistoryEntry>        history   = new ArrayList<>();
+
+    private ModConfig() { load(); }
+
     public static ModConfig getInstance() {
-        if (instance == null) {
-            instance = new ModConfig();
-        }
+        if (instance == null) instance = new ModConfig();
         return instance;
     }
-    
-    // ═══════════════════════════════════════════
-    // LANGUE
-    // ═══════════════════════════════════════════
-    
-    public String getLanguage() {
-        return language;
+
+    // ─── Langue ────────────────────────────────────────────
+    public String  getLanguage()           { return language; }
+    public void    setLanguage(String l)   { language = l; save(); }
+
+    // ─── Thème ─────────────────────────────────────────────
+    public int  getThemeIndex()        { return themeIndex; }
+    public void setThemeIndex(int idx) { themeIndex = idx; save(); }
+
+    // ─── Mode compact ──────────────────────────────────────
+    public boolean isCompactMode()         { return compactMode; }
+    public void    setCompactMode(boolean c) { compactMode = c; save(); }
+
+    // ─── Favoris ───────────────────────────────────────────
+    public boolean isFavorite(String home) {
+        return favorites.contains(home.toLowerCase());
     }
-    
-    public void setLanguage(String lang) {
-        this.language = lang;
-        save();
+
+    public boolean toggleFavorite(String home) {
+        String k = home.toLowerCase();
+        if (favorites.remove(k)) { save(); return false; }
+        favorites.add(k); save(); return true;
     }
-    
-    // ═══════════════════════════════════════════
-    // THÈME
-    // ═══════════════════════════════════════════
-    
-    public int getThemeIndex() {
-        return themeIndex;
+
+    // ─── Statistiques ──────────────────────────────────────
+    public int getUseCount(String home) {
+        return useCounts.getOrDefault(home.toLowerCase(), 0);
     }
-    
-    public void setThemeIndex(int index) {
-        this.themeIndex = index;
-        save();
-    }
-    
-    // ═══════════════════════════════════════════
-    // MODE COMPACT
-    // ═══════════════════════════════════════════
-    
-    public boolean isCompactMode() {
-        return compactMode;
-    }
-    
-    public void setCompactMode(boolean compact) {
-        this.compactMode = compact;
-        save();
-    }
-    
-    // ═══════════════════════════════════════════
-    // FAVORIS
-    // ═══════════════════════════════════════════
-    
-    public boolean isFavorite(String homeName) {
-        return favorites.contains(homeName.toLowerCase());
-    }
-    
-    public boolean toggleFavorite(String homeName) {
-        String key = homeName.toLowerCase();
-        if (favorites.contains(key)) {
-            favorites.remove(key);
-            save();
-            return false;
-        } else {
-            favorites.add(key);
-            save();
-            return true;
-        }
-    }
-    
-    // ═══════════════════════════════════════════
-    // STATISTIQUES
-    // ═══════════════════════════════════════════
-    
-    public int getUseCount(String homeName) {
-        return useCounts.getOrDefault(homeName.toLowerCase(), 0);
-    }
-    
-    public void incrementUseCount(String homeName) {
-        String key = homeName.toLowerCase();
-        useCounts.put(key, useCounts.getOrDefault(key, 0) + 1);
+
+    public void incrementUseCount(String home) {
+        String k = home.toLowerCase();
+        useCounts.merge(k, 1, Integer::sum);
         totalTeleports++;
         save();
     }
-    
-    public int getTotalTeleports() {
-        return totalTeleports;
-    }
-    
-    public Map<String, Integer> getAllUseCounts() {
-        return new HashMap<>(useCounts);
-    }
-    
-    // ═══════════════════════════════════════════
-    // HISTORIQUE
-    // ═══════════════════════════════════════════
-    
-    public void addToHistory(String homeName) {
-        history.removeIf(e -> e.homeName.equalsIgnoreCase(homeName));
-        history.add(0, new HistoryEntry(homeName, System.currentTimeMillis()));
-        
-        if (history.size() > 15) {
-            history = new ArrayList<>(history.subList(0, 15));
-        }
+
+    public int getTotalTeleports()       { return totalTeleports; }
+    public Map<String,Integer> getAllUseCounts() { return new HashMap<>(useCounts); }
+
+    // ─── Historique ────────────────────────────────────────
+    public void addToHistory(String home) {
+        history.removeIf(e -> e.homeName.equalsIgnoreCase(home));
+        history.add(0, new HistoryEntry(home, System.currentTimeMillis()));
+        if (history.size() > 15) history = new ArrayList<>(history.subList(0, 15));
         save();
     }
-    
-    public List<HistoryEntry> getHistory() {
-        return new ArrayList<>(history);
-    }
-    
-    public void clearHistory() {
-        history.clear();
-        save();
-    }
-    
-    // ═══════════════════════════════════════════
-    // PERSISTENCE - AVEC MIGRATION
-    // ═══════════════════════════════════════════
-    
+
+    public List<HistoryEntry> getHistory()  { return new ArrayList<>(history); }
+    public void clearHistory()              { history.clear(); save(); }
+
+    // ─── Persistance ───────────────────────────────────────
     private void save() {
         try {
             JsonObject json = new JsonObject();
-            json.addProperty("themeIndex", themeIndex);
-            json.addProperty("compactMode", compactMode);
-            json.addProperty("language", language);
+            json.addProperty("themeIndex",     themeIndex);
+            json.addProperty("compactMode",    compactMode);
+            json.addProperty("language",       language);
             json.addProperty("totalTeleports", totalTeleports);
-            
-            // Favoris
-            JsonArray favArray = new JsonArray();
-            for (String fav : favorites) {
-                favArray.add(fav);
-            }
-            json.add("favorites", favArray);
-            
-            // Use counts
+
+            JsonArray favArr = new JsonArray();
+            favorites.forEach(favArr::add);
+            json.add("favorites", favArr);
+
             JsonObject countsObj = new JsonObject();
-            for (Map.Entry<String, Integer> entry : useCounts.entrySet()) {
-                countsObj.addProperty(entry.getKey(), entry.getValue());
-            }
+            useCounts.forEach(countsObj::addProperty);
             json.add("useCounts", countsObj);
-            
-            // Historique (nouveau format)
-            JsonArray historyArray = new JsonArray();
-            for (HistoryEntry entry : history) {
-                JsonObject entryObj = new JsonObject();
-                entryObj.addProperty("homeName", entry.homeName);
-                entryObj.addProperty("timestamp", entry.timestamp);
-                historyArray.add(entryObj);
+
+            JsonArray histArr = new JsonArray();
+            for (HistoryEntry e : history) {
+                JsonObject o = new JsonObject();
+                o.addProperty("homeName",  e.homeName);
+                o.addProperty("timestamp", e.timestamp);
+                histArr.add(o);
             }
-            json.add("history", historyArray);
-            
+            json.add("history", histArr);
+
             Files.writeString(CONFIG_PATH, GSON.toJson(json));
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-    
+
     private void load() {
-        if (!Files.exists(CONFIG_PATH)) {
-            return;
-        }
-        
+        if (!Files.exists(CONFIG_PATH)) return;
         try {
-            String jsonString = Files.readString(CONFIG_PATH);
-            JsonObject json = JsonParser.parseString(jsonString).getAsJsonObject();
-            
-            // Charger les valeurs simples
-            if (json.has("themeIndex")) {
-                themeIndex = json.get("themeIndex").getAsInt();
-            }
-            if (json.has("compactMode")) {
-                compactMode = json.get("compactMode").getAsBoolean();
-            }
-            if (json.has("language")) {
-                language = json.get("language").getAsString();
-            }
-            if (json.has("totalTeleports")) {
-                totalTeleports = json.get("totalTeleports").getAsInt();
-            }
-            
-            // Charger les favoris
+            JsonObject json = JsonParser.parseString(
+                    Files.readString(CONFIG_PATH)).getAsJsonObject();
+
+            if (json.has("themeIndex"))     themeIndex     = json.get("themeIndex").getAsInt();
+            if (json.has("compactMode"))    compactMode    = json.get("compactMode").getAsBoolean();
+            if (json.has("language"))       language       = json.get("language").getAsString();
+            if (json.has("totalTeleports")) totalTeleports = json.get("totalTeleports").getAsInt();
+
             if (json.has("favorites")) {
-                JsonArray favArray = json.getAsJsonArray("favorites");
                 favorites.clear();
-                for (JsonElement elem : favArray) {
-                    favorites.add(elem.getAsString());
-                }
+                json.getAsJsonArray("favorites").forEach(e -> favorites.add(e.getAsString()));
             }
-            
-            // Charger les use counts
             if (json.has("useCounts")) {
-                JsonObject countsObj = json.getAsJsonObject("useCounts");
                 useCounts.clear();
-                for (Map.Entry<String, JsonElement> entry : countsObj.entrySet()) {
-                    useCounts.put(entry.getKey(), entry.getValue().getAsInt());
-                }
+                json.getAsJsonObject("useCounts").entrySet()
+                    .forEach(e -> useCounts.put(e.getKey(), e.getValue().getAsInt()));
             }
-            
-            // Charger l'historique - AVEC MIGRATION
             if (json.has("history")) {
-                JsonArray historyArray = json.getAsJsonArray("history");
                 history.clear();
-                
-                for (JsonElement elem : historyArray) {
+                for (JsonElement el : json.getAsJsonArray("history")) {
                     try {
-                        if (elem.isJsonObject()) {
-                            // Nouveau format: {"homeName": "...", "timestamp": ...}
-                            JsonObject entryObj = elem.getAsJsonObject();
-                            String homeName = entryObj.get("homeName").getAsString();
-                            long timestamp = entryObj.has("timestamp") ? 
-                                entryObj.get("timestamp").getAsLong() : System.currentTimeMillis();
-                            history.add(new HistoryEntry(homeName, timestamp));
-                        } else if (elem.isJsonPrimitive()) {
-                            // Ancien format: juste une string
-                            String homeName = elem.getAsString();
-                            history.add(new HistoryEntry(homeName, System.currentTimeMillis()));
+                        if (el.isJsonObject()) {
+                            JsonObject o = el.getAsJsonObject();
+                            history.add(new HistoryEntry(
+                                    o.get("homeName").getAsString(),
+                                    o.has("timestamp")
+                                        ? o.get("timestamp").getAsLong()
+                                        : System.currentTimeMillis()
+                            ));
+                        } else if (el.isJsonPrimitive()) {
+                            history.add(new HistoryEntry(
+                                    el.getAsString(), System.currentTimeMillis()));
                         }
-                    } catch (Exception e) {
-                        // Ignorer les entrées invalides
-                    }
+                    } catch (Exception ignored) {}
                 }
             }
-            
         } catch (Exception e) {
-            // Si erreur de parsing, reset la config
-            System.err.println("[HomeGUI] Error loading config, resetting: " + e.getMessage());
+            System.err.println("[HomeGUI] Config corrompue, reset. " + e.getMessage());
             resetToDefaults();
         }
     }
-    
+
     private void resetToDefaults() {
-        themeIndex = 0;
-        compactMode = false;
-        language = "en";
-        favorites.clear();
-        useCounts.clear();
-        history.clear();
+        themeIndex = 0; compactMode = false; language = "en";
         totalTeleports = 0;
-        
-        // Supprimer le fichier corrompu et sauvegarder
-        try {
-            Files.deleteIfExists(CONFIG_PATH);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        favorites.clear(); useCounts.clear(); history.clear();
+        try { Files.deleteIfExists(CONFIG_PATH); } catch (IOException ignored) {}
         save();
     }
-    
-    // ═══════════════════════════════════════════
-    // CLASSE HISTORY ENTRY
-    // ═══════════════════════════════════════════
-    
+
+    // ─── HistoryEntry ──────────────────────────────────────
     public static class HistoryEntry {
         public String homeName;
-        public long timestamp;
-        
+        public long   timestamp;
+
         public HistoryEntry() {
-            this.homeName = "";
+            this.homeName  = "";
             this.timestamp = System.currentTimeMillis();
         }
-        
+
         public HistoryEntry(String homeName, long timestamp) {
-            this.homeName = homeName;
+            this.homeName  = homeName;
             this.timestamp = timestamp;
         }
-        
+
         public String getTimeAgo() {
-            long diff = System.currentTimeMillis() - timestamp;
-            long seconds = diff / 1000;
-            long minutes = seconds / 60;
-            long hours = minutes / 60;
-            long days = hours / 24;
-            
-            if (days > 0) return days + "d";
-            if (hours > 0) return hours + "h";
-            if (minutes > 0) return minutes + "m";
-            return seconds + "s";
+            long s = (System.currentTimeMillis() - timestamp) / 1000;
+            if (s < 60)          return s + "s";
+            if (s < 3600)        return (s / 60) + "m";
+            if (s < 86400)       return (s / 3600) + "h";
+            return (s / 86400) + "d";
         }
     }
 }
