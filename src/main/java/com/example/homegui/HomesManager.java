@@ -1,6 +1,8 @@
 package com.example.homegui;
 
 import net.minecraft.client.MinecraftClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,11 +11,12 @@ import java.util.regex.Pattern;
 
 public class HomesManager {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger("homegui");
+
     private static HomesManager instance;
     private final List<String> homes = new ArrayList<>();
     private boolean isWaitingForResponse = false;
     private long lastRequestTime = 0;
-
     private static final long TIMEOUT_MS = 5000L;
 
     private static final Pattern[] HOME_PATTERNS = {
@@ -21,15 +24,13 @@ public class HomesManager {
         Pattern.compile("(?i)vos\\s+homes?\\s*:\\s*(.+)"),
         Pattern.compile("(?i)\\[home\\].*?:\\s*(.+)"),
     };
-
-    private static final Pattern BRACKET_PATTERN = Pattern.compile("\\[([^\\]]+)\\]");
+    private static final Pattern BRACKET_PATTERN =
+            Pattern.compile("\\[([^\\]]+)\\]");
 
     private HomesManager() {}
 
     public static HomesManager getInstance() {
-        if (instance == null) {
-            instance = new HomesManager();
-        }
+        if (instance == null) instance = new HomesManager();
         return instance;
     }
 
@@ -39,7 +40,7 @@ public class HomesManager {
             isWaitingForResponse = true;
             lastRequestTime = System.currentTimeMillis();
             client.player.networkHandler.sendChatCommand("homes");
-            HomeGuiClient.LOGGER.info("[HomeGUI] Demande de la liste des homes...");
+            LOGGER.info("[HomeGUI] Demande de la liste des homes...");
         }
     }
 
@@ -49,66 +50,57 @@ public class HomesManager {
             isWaitingForResponse = false;
             return;
         }
-
-        String clean = message.replaceAll("§[0-9a-fklmnorA-FKLMNOR]", "").trim();
-
+        String clean = message
+                .replaceAll("§[0-9a-fklmnorA-FKLMNOR]", "")
+                .trim();
         if (parseHomesMessage(clean)) {
             isWaitingForResponse = false;
-            HomeGuiClient.LOGGER.info("[HomeGUI] Homes trouvés: {}", homes);
+            LOGGER.info("[HomeGUI] Homes trouvés: {}", homes);
         }
     }
 
     private boolean parseHomesMessage(String message) {
         // Homes entre crochets [home1] [home2]
-        Matcher bracketMatcher = BRACKET_PATTERN.matcher(message);
+        Matcher bm = BRACKET_PATTERN.matcher(message);
         List<String> found = new ArrayList<>();
-        while (bracketMatcher.find()) {
-            String home = bracketMatcher.group(1).trim();
-            if (!home.isEmpty() && !home.equalsIgnoreCase("home")) {
-                found.add(home);
-            }
+        while (bm.find()) {
+            String h = bm.group(1).trim();
+            if (!h.isEmpty() && !h.equalsIgnoreCase("home")) found.add(h);
         }
         if (!found.isEmpty()) {
             homes.clear();
             homes.addAll(found);
             return true;
         }
-
         // Patterns standards
-        for (Pattern pattern : HOME_PATTERNS) {
-            Matcher matcher = pattern.matcher(message);
-            if (matcher.find()) {
-                parseHomesList(matcher.group(1));
+        for (Pattern p : HOME_PATTERNS) {
+            Matcher m = p.matcher(message);
+            if (m.find()) {
+                parseHomesList(m.group(1));
                 return !homes.isEmpty();
             }
         }
-
-        // Fallback : virgules après "home"
+        // Fallback
         if (message.toLowerCase().contains("home")) {
             String[] parts = message.split("[:,]");
             if (parts.length > 1) {
                 homes.clear();
                 for (int i = 1; i < parts.length; i++) {
-                    String home = parts[i].trim().replaceAll("[\\[\\](){}]", "").trim();
-                    if (!home.isEmpty() && home.length() < 30) {
-                        homes.add(home);
-                    }
+                    String h = parts[i].trim()
+                            .replaceAll("[\\[\\](){}]", "").trim();
+                    if (!h.isEmpty() && h.length() < 30) homes.add(h);
                 }
                 return !homes.isEmpty();
             }
         }
-
         return false;
     }
 
-    private void parseHomesList(String homesList) {
+    private void parseHomesList(String list) {
         homes.clear();
-        String[] parts = homesList.split("[,|\\s]+");
-        for (String part : parts) {
-            String home = part.trim().replaceAll("[\\[\\](){}]", "").trim();
-            if (!home.isEmpty() && home.length() < 30) {
-                homes.add(home);
-            }
+        for (String part : list.split("[,|\\s]+")) {
+            String h = part.trim().replaceAll("[\\[\\](){}]", "").trim();
+            if (!h.isEmpty() && h.length() < 30) homes.add(h);
         }
     }
 
@@ -120,19 +112,8 @@ public class HomesManager {
         }
     }
 
-    public List<String> getHomes() {
-        return new ArrayList<>(homes);
-    }
-
-    public void addHome(String home) {
-        if (!homes.contains(home)) homes.add(home);
-    }
-
-    public void clearHomes() {
-        homes.clear();
-    }
-
-    public boolean isWaiting() {
-        return isWaitingForResponse;
-    }
+    public List<String> getHomes()     { return new ArrayList<>(homes); }
+    public void addHome(String home)   { if (!homes.contains(home)) homes.add(home); }
+    public void clearHomes()           { homes.clear(); }
+    public boolean isWaiting()         { return isWaitingForResponse; }
 }
