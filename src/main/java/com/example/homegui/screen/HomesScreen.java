@@ -4,6 +4,8 @@ import com.example.homegui.HomesManager;
 import com.example.homegui.config.ModConfig;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.Click;
+import net.minecraft.client.gui.screen.KeyInput;
 import net.minecraft.text.Text;
 
 import java.util.ArrayList;
@@ -26,10 +28,9 @@ public class HomesScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        renderBackground(context);
+        context.fill(0, 0, width, height, 0xCC000000);
 
         hoveredIndex = -1;
-
         int y = 60;
 
         for (int i = 0; i < homes.size(); i++) {
@@ -58,30 +59,30 @@ public class HomesScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (super.mouseClicked(mouseX, mouseY, button)) return true;
-
+    public boolean mouseClicked(Click click, boolean doubleClick) {
         if (hoveredIndex >= 0) {
             String home = homes.get(hoveredIndex);
 
-            if (button == 0) {
+            if (click.button() == 0) {
                 ModConfig.getInstance().incrementUseCount(home);
                 ModConfig.getInstance().addToHistory(home);
                 HomesManager.getInstance().teleportToHome(home);
                 return true;
             }
 
-            if (button == 1) {
+            if (click.button() == 1) {
                 ModConfig.getInstance().toggleFavorite(home);
                 return true;
             }
         }
 
-        return false;
+        return super.mouseClicked(click, doubleClick);
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyInput input) {
+
+        int keyCode = input.keyCode();
 
         if (keyCode >= 49 && keyCode <= 57) {
             int index = keyCode - 49;
@@ -98,7 +99,7 @@ public class HomesScreen extends Screen {
             return true;
         }
 
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(input);
     }
 
     @Override
