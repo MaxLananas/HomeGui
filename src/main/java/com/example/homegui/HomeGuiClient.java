@@ -1,13 +1,14 @@
 package com.example.homegui;
 
+import com.example.homegui.config.LangManager;
+import com.example.homegui.config.ModConfig;
 import com.example.homegui.screen.HomesScreen;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.option.KeyBinding.Category;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,21 +16,25 @@ import org.slf4j.LoggerFactory;
 public class HomeGuiClient implements ClientModInitializer {
 
     public static final Logger LOGGER = LoggerFactory.getLogger("homegui");
+    public static final String MOD_ID = "homegui";
 
     private static KeyBinding openGuiKey;
 
     @Override
     public void onInitializeClient() {
+        // Charger la config et la langue
+        ModConfig.getInstance();
+        LangManager.getInstance().loadFromConfig();
 
-        Category category = KeyBinding.Category.create("category.homegui.main");
-
+        // Enregistrer la touche avec la nouvelle API (Identifier au lieu de String)
         openGuiKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.homegui.open_gui",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_H,
-                category
+                "category.homegui.main"
         ));
 
+        // Tick client
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openGuiKey.wasPressed()) {
                 if (client.player != null) {
@@ -38,5 +43,7 @@ public class HomeGuiClient implements ClientModInitializer {
                 }
             }
         });
+
+        LOGGER.info("[HomeGUI] Mod initialisé avec succès !");
     }
 }
