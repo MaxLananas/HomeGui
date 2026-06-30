@@ -1,8 +1,8 @@
-package com.example.homegui.screen;
+package com.maxlananas.homegui.screen;
 
-import com.example.homegui.HomesManager;
-import com.example.homegui.config.LangManager;
-import com.example.homegui.config.ModConfig;
+import com.maxlananas.homegui.HomesManager;
+import com.maxlananas.homegui.config.LangManager;
+import com.maxlananas.homegui.config.ModConfig;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
