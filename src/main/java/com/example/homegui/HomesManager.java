@@ -1,4 +1,4 @@
-package com.example.homegui;
+package com.maxlananas.homegui;
 
 import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;
