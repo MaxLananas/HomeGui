@@ -3,9 +3,9 @@ package com.maxlananas.homegui.screen;
 import com.maxlananas.homegui.HomesManager;
 import com.maxlananas.homegui.config.LangManager;
 import com.maxlananas.homegui.config.ModConfig;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 import java.util.*;
 
@@ -27,12 +27,12 @@ public class StatsScreen extends Screen {
     private final Screen parent;
 
     public StatsScreen(Screen parent) {
-        super(Text.literal("Statistics"));
+        super(Component.literal("Statistics"));
         this.parent = parent;
     }
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         ctx.fill(0, 0, width, height, COLOR_BG);
 
         int panelX = width / 2 - 150;
@@ -47,8 +47,8 @@ public class StatsScreen extends Screen {
         ctx.fill(panelX + panelW - 1, panelY, panelX + panelW, panelY + panelH, COLOR_BORDER);
 
         String title = LangManager.getInstance().get("title.stats");
-        ctx.drawCenteredTextWithShadow(textRenderer,
-                Text.literal("📊 " + title), width / 2, panelY + 8, COLOR_ACCENT);
+        ctx.drawCenteredString(font,
+                Component.literal("📊 " + title), width / 2, panelY + 8, COLOR_ACCENT);
 
         ModConfig config = ModConfig.getInstance();
         List<String> homes = HomesManager.getInstance().getHomes();
@@ -82,11 +82,11 @@ public class StatsScreen extends Screen {
         y += cardH + 16;
 
         ctx.fill(panelX + 20, y, panelX + panelW - 20, y + 1, COLOR_BORDER);
-        ctx.drawCenteredTextWithShadow(textRenderer,
-                Text.literal("§8" + LangManager.getInstance().get("stats.top_homes")),
+        ctx.drawCenteredString(font,
+                Component.literal("§8" + LangManager.getInstance().get("stats.top_homes")),
                 width / 2, y + 4, COLOR_DIM);
         y += 16;
-        
+
         Map<String, Integer> counts = config.getAllUseCounts();
         List<Map.Entry<String, Integer>> sorted = new ArrayList<>(counts.entrySet());
         sorted.sort((a, b) -> b.getValue() - a.getValue());
@@ -97,37 +97,34 @@ public class StatsScreen extends Screen {
 
         for (int i = 0; i < Math.min(5, sorted.size()); i++) {
             Map.Entry<String, Integer> entry = sorted.get(i);
-            int barW = panelW - 36;
-            int bX   = panelX + 18;
+            int barW  = panelW - 36;
+            int bX    = panelX + 18;
             int fillW = barW * entry.getValue() / maxCount;
 
             ctx.fill(bX, y, bX + barW, y + 16, COLOR_BAR_BG);
             int barColor = i < 3 ? medals[i] : COLOR_BAR_FG;
-            ctx.fill(bX, y, bX + fillW, y + 16, barColor & 0x55FFFFFF | 0x55000000);
+            ctx.fill(bX, y, bX + fillW, y + 16, (barColor & 0x55FFFFFF) | 0x55000000);
             ctx.fill(bX, y + 14, bX + fillW, y + 16, barColor);
 
             String medal = i == 0 ? "🥇" : i == 1 ? "🥈" : i == 2 ? "🥉" : "  #" + (i + 1);
-            ctx.drawTextWithShadow(textRenderer,
-                    Text.literal(medal), bX + 4, y + 4, COLOR_TEXT);
+            ctx.drawString(font, Component.literal(medal), bX + 4, y + 4, COLOR_TEXT);
 
-            ctx.drawCenteredTextWithShadow(textRenderer,
-                    Text.literal(entry.getKey()),
+            ctx.drawCenteredString(font, Component.literal(entry.getKey()),
                     bX + barW / 2, y + 4, COLOR_TEXT);
 
             int v = entry.getValue();
             String visits = v + " " + (v > 1
                     ? LangManager.getInstance().get("stats.visits_plural")
                     : LangManager.getInstance().get("stats.visits"));
-            ctx.drawTextWithShadow(textRenderer,
-                    Text.literal("§7" + visits),
-                    bX + barW - textRenderer.getWidth(visits) - 4, y + 4, COLOR_DIM);
+            ctx.drawString(font, Component.literal("§7" + visits),
+                    bX + barW - font.width(visits) - 4, y + 4, COLOR_DIM);
 
             y += 20;
         }
 
         if (sorted.isEmpty()) {
-            ctx.drawCenteredTextWithShadow(textRenderer,
-                    Text.literal("§7Aucune donnée disponible"),
+            ctx.drawCenteredString(font,
+                    Component.literal("§7Aucune donnée disponible"),
                     width / 2, y + 8, COLOR_DIM);
         }
 
@@ -141,15 +138,15 @@ public class StatsScreen extends Screen {
                 backHov ? 0xFF2E2E5F : COLOR_BTN);
         ctx.fill(backX, backY, backX + backW, backY + 1,
                 backHov ? COLOR_ACCENT : COLOR_BORDER);
-        ctx.drawCenteredTextWithShadow(textRenderer,
-                Text.literal(LangManager.getInstance().get("button.back")),
+        ctx.drawCenteredString(font,
+                Component.literal(LangManager.getInstance().get("button.back")),
                 backX + backW / 2, backY + 4,
                 backHov ? 0xFFFFFFFF : COLOR_DIM);
 
         super.render(ctx, mouseX, mouseY, delta);
     }
 
-    private void drawStatCard(DrawContext ctx, int x, int y, int w, int h,
+    private void drawStatCard(GuiGraphics ctx, int x, int y, int w, int h,
                                String value, String label, int accentColor) {
         ctx.fill(x, y, x + w, y + h, 0xFF0D0D24);
         ctx.fill(x, y, x + w, y + 2, accentColor);
@@ -157,10 +154,10 @@ public class StatsScreen extends Screen {
         ctx.fill(x + w - 1, y, x + w, y + h, COLOR_BORDER);
         ctx.fill(x, y + h - 1, x + w, y + h, COLOR_BORDER);
 
-        ctx.drawCenteredTextWithShadow(textRenderer,
-                Text.literal("§l" + value), x + w / 2, y + 8, accentColor);
-        ctx.drawCenteredTextWithShadow(textRenderer,
-                Text.literal("§8" + label), x + w / 2, y + 22, COLOR_DIM);
+        ctx.drawCenteredString(font,
+                Component.literal("§l" + value), x + w / 2, y + 8, accentColor);
+        ctx.drawCenteredString(font,
+                Component.literal("§8" + label), x + w / 2, y + 22, COLOR_DIM);
     }
 
     @Override
@@ -176,8 +173,8 @@ public class StatsScreen extends Screen {
 
         if (mx >= backX && mx <= backX + backW
                 && my >= backY && my <= backY + 16) {
-            assert client != null;
-            client.setScreen(parent);
+            assert minecraft != null;
+            minecraft.setScreen(parent);
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -186,13 +183,13 @@ public class StatsScreen extends Screen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == 256) {
-            assert client != null;
-            client.setScreen(parent);
+            assert minecraft != null;
+            minecraft.setScreen(parent);
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
-    public boolean shouldPause() { return false; }
+    public boolean isPauseScreen() { return false; }
 }
