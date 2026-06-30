@@ -6,7 +6,7 @@
   "description": "GUI to manage your homes",
   "authors": ["MaxLananas"],
   "contact": {
-    "sources": "https://github.com/example/HomeGui"
+    "sources": "https://github.com/MaxLananas/HomeGui"
   },
   "license": "MIT",
   "icon": "assets/homegui/icon.png",
