@@ -11,8 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HomesScreen extends Screen {
-
-    // ─── Couleurs thème ───────────────────────────────────
     private static final int COLOR_BG           = 0xEE0A0A1A;
     private static final int COLOR_PANEL        = 0xDD121228;
     private static final int COLOR_ACCENT       = 0xFF5B5BFF;
@@ -37,17 +35,12 @@ public class HomesScreen extends Screen {
     private int    scrollOffset             = 0;
     private boolean showFavoritesOnly       = false;
 
-    // Boutons bas de page (y calculé dans render)
     private int btnHistoryX, btnStatsX, btnRefreshX, btnFavX, btnCloseX;
     private int bottomBtnY;
 
     public HomesScreen() {
         super(Text.literal("HomeGUI"));
     }
-
-    // ═══════════════════════════════════════════════════════
-    // INIT
-    // ═══════════════════════════════════════════════════════
     @Override
     protected void init() {
         homes.clear();
@@ -67,27 +60,18 @@ public class HomesScreen extends Screen {
         scrollOffset = 0;
     }
 
-    // ═══════════════════════════════════════════════════════
-    // RENDER
-    // ═══════════════════════════════════════════════════════
     @Override
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
-        // Fond sombre
         ctx.fill(0, 0, width, height, COLOR_BG);
 
-        // Panneau central
         int panelX = width / 2 - 140;
         int panelW = 280;
         int panelY = 20;
         int panelH = height - 50;
         drawPanel(ctx, panelX, panelY, panelX + panelW, panelY + panelH);
-
-        // ─── Titre ───────────────────────────────────────────
         String title = LangManager.getInstance().get("title.homes");
         ctx.drawCenteredTextWithShadow(textRenderer, Text.literal("✦ " + title + " ✦"),
                 width / 2, panelY + 8, COLOR_ACCENT);
-
-        // ─── Barre de recherche ───────────────────────────────
         int searchY = panelY + 26;
         int searchX = panelX + PANEL_PAD;
         int searchW = panelW - PANEL_PAD * 2 - 28;
@@ -103,7 +87,6 @@ public class HomesScreen extends Screen {
         ctx.drawTextWithShadow(textRenderer, Text.literal(searchDisplay),
                 searchX + 4, searchY + 4, COLOR_TEXT);
 
-        // Bouton favori filtre
         int favBtnX = searchX + searchW + 4;
         boolean favBtnHover = mouseX >= favBtnX && mouseX <= favBtnX + 22
                 && mouseY >= searchY && mouseY <= searchY + 16;
@@ -114,8 +97,6 @@ public class HomesScreen extends Screen {
         ctx.drawCenteredTextWithShadow(textRenderer, Text.literal("★"),
                 favBtnX + 11, searchY + 4,
                 showFavoritesOnly ? COLOR_FAV : COLOR_TEXT_DIM);
-
-        // ─── Liste des homes ──────────────────────────────────
         int listStartY = searchY + 22;
         int listEndY   = panelY + panelH - 30;
         int visibleRows = (listEndY - listStartY) / (BUTTON_H + SPACING);
@@ -144,32 +125,22 @@ public class HomesScreen extends Screen {
                 int     uses    = ModConfig.getInstance().getUseCount(home);
 
                 if (hovered) hoveredIndex = idx;
-
-                // Fond bouton
                 int bgColor = hovered ? COLOR_ACCENT_HOVER : COLOR_BTN;
                 ctx.fill(btnX, btnY, btnX + btnW, btnY + BUTTON_H, bgColor);
                 ctx.drawBorder(btnX, btnY, btnW, BUTTON_H,
                         isFav ? COLOR_FAV : (hovered ? COLOR_ACCENT : COLOR_BORDER));
-
-                // Icône favori
                 if (isFav) {
                     ctx.drawTextWithShadow(textRenderer, Text.literal("★"),
                             btnX + 5, btnY + 7, COLOR_FAV);
                 }
-
-                // Nom du home
                 ctx.drawCenteredTextWithShadow(textRenderer, Text.literal(home),
                         btnX + btnW / 2, btnY + 7, hovered ? 0xFFFFFFFF : COLOR_TEXT);
-
-                // Compteur d'utilisation
                 if (uses > 0) {
                     ctx.drawTextWithShadow(textRenderer,
                             Text.literal("§8×" + uses),
                             btnX + btnW - 22, btnY + 7, COLOR_TEXT_DIM);
                 }
             }
-
-            // Scrollbar
             if (filtered.size() > visibleRows) {
                 int sbX   = panelX + panelW - 6;
                 int sbH   = listEndY - listStartY;
@@ -180,12 +151,8 @@ public class HomesScreen extends Screen {
                 ctx.fill(sbX, thumbY, sbX + 4, thumbY + thumbH, COLOR_ACCENT);
             }
         }
-
-        // ─── Boutons du bas ───────────────────────────────────
         bottomBtnY = panelY + panelH - 22;
         renderBottomButtons(ctx, mouseX, mouseY);
-
-        // ─── Tooltip ─────────────────────────────────────────
         if (hoveredIndex >= 0 && hoveredIndex < filtered.size()) {
             String h = filtered.get(hoveredIndex);
             String tip = LangManager.getInstance().get("message.click_to_tp") + " | "
@@ -201,7 +168,6 @@ public class HomesScreen extends Screen {
 
     private void drawPanel(DrawContext ctx, int x1, int y1, int x2, int y2) {
         ctx.fill(x1, y1, x2, y2, COLOR_PANEL);
-        // Bordure
         ctx.fill(x1, y1, x2, y1 + 1, COLOR_BORDER);
         ctx.fill(x1, y2 - 1, x2, y2, COLOR_BORDER);
         ctx.fill(x1, y1, x1 + 1, y2, COLOR_BORDER);
@@ -244,9 +210,6 @@ public class HomesScreen extends Screen {
         }
     }
 
-    // ═══════════════════════════════════════════════════════
-    // EVENTS
-    // ═══════════════════════════════════════════════════════
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         int mx = (int) mouseX, my = (int) mouseY;
@@ -259,14 +222,12 @@ public class HomesScreen extends Screen {
         int searchW = panelW - PANEL_PAD * 2 - 28;
         int favBtnX = searchX + searchW + 4;
 
-        // Clic barre de recherche
         if (mx >= searchX && mx <= searchX + searchW
                 && my >= searchY && my <= searchY + 16) {
             searchFocused = !searchFocused;
             return true;
         }
-
-        // Clic bouton favori-filtre
+        
         if (mx >= favBtnX && mx <= favBtnX + 22
                 && my >= searchY && my <= searchY + 16) {
             showFavoritesOnly = !showFavoritesOnly;
@@ -274,6 +235,5 @@ public class HomesScreen extends Screen {
             return true;
         }
 
-        // Clic sur un home
         if (hoveredIndex >= 0 && hoveredIndex < filtered.size()) {
             String 
