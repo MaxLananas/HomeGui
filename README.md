@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/FabricMC/community/main/profile/assets/logo.png" width="80" alt="Fabric Logo"/>
+<img width="172" height="58" alt="image" src="https://github.com/user-attachments/assets/5be51ecc-08eb-4a97-bfc2-5df2adc12f41" />
 
 <br/>
 
@@ -71,54 +71,6 @@ Can be changed in `Options > Controls > Key Binds > HomeGUI`.
 
 ---
 
-## How It Works
-
-```
-Player presses H
-      │
-      ▼
-/homes sent to server
-      │
-      ▼
-Server replies in chat
-      │
-      ▼
-ChatHudMixin intercepts the message
-      │
-      ▼
-HomesManager parses home names via regex patterns
-      │
-      ▼
-HomesScreen renders the list
-      │
-      ▼
-Player clicks a home → /home <name> sent to server
-```
-
-The parsing system supports bracket formats `[home]`, colon-separated lists,  
-comma-separated lists, and other common server output styles.
-
----
-
-## Project Structure
-
-```
-com.maxlananas.homegui
-├── HomeGuiClient.java          Entry point, keybind registration
-├── HomesManager.java           Home list state, chat parsing, teleport
-├── config/
-│   ├── ModConfig.java          Config persistence, favorites, history, stats
-│   └── LangManager.java        EN / FR language system
-├── screen/
-│   ├── HomesScreen.java        Main home list screen
-│   ├── StatsScreen.java        Usage statistics screen
-│   └── HistoryScreen.java      Recent teleport history screen
-└── mixin/
-    └── ChatHudMixin.java       Client-side chat interception
-```
-
----
-
 ## Configuration
 
 Location: `.minecraft/config/homegui.json`
@@ -164,6 +116,3 @@ If your server format is not supported, feel free to open an issue or report it 
 <div align="center">
 <sub>Built with Fabric — Client-side only — No server installation required</sub>
 </div>
-
-**Notes on the badges:**  
-The shields are pulled from [shields.io](https://shields.io) and render automatically on GitHub. No token or configuration needed. If you add a proper banner image to your repository, replace the Fabric logo at the top with your own artwork for a cleaner result.
