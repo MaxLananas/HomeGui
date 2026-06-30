@@ -81,9 +81,10 @@ public class HomesScreen extends Screen {
 
         ctx.fill(searchX, searchY, searchX + searchW, searchY + 16,
                 searchFocused ? 0xFF1A1A4A : 0xFF111130);
-        ctx.renderOutline(searchX, searchY, searchW, 16, searchFocused ? COLOR_ACCENT : COLOR_BORDER);
+        ctx.renderOutline(searchX, searchY, searchW, 16,
+                searchFocused ? COLOR_ACCENT : COLOR_BORDER);
         String searchDisplay = searchQuery.isEmpty() && !searchFocused
-                ? "§7🔍 Search..."
+                ? "§7\u1F50D Search..."
                 : "§f" + searchQuery + (searchFocused ? "§7|" : "");
         ctx.drawString(font, Component.literal(searchDisplay),
                 searchX + 4, searchY + 4, COLOR_TEXT);
@@ -251,7 +252,6 @@ public class HomesScreen extends Screen {
             return true;
         }
 
-        // Bottom buttons
         if (my >= bottomBtnY && my <= bottomBtnY + 16) {
             if (mx >= btnRefreshX && mx <= btnRefreshX + 52) {
                 HomesManager.getInstance().requestHomes();
