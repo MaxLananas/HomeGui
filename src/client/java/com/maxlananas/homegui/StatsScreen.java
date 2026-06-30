@@ -1,8 +1,8 @@
-package com.example.homegui.screen;
+package com.maxlananas.homegui.screen;
 
-import com.example.homegui.HomesManager;
-import com.example.homegui.config.LangManager;
-import com.example.homegui.config.ModConfig;
+import com.maxlananas.homegui.HomesManager;
+import com.maxlananas.homegui.config.LangManager;
+import com.maxlananas.homegui.config.ModConfig;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
@@ -40,14 +40,12 @@ public class StatsScreen extends Screen {
         int panelY = 15;
         int panelH = height - 40;
 
-        // Panneau
         ctx.fill(panelX, panelY, panelX + panelW, panelY + panelH, COLOR_PANEL);
         ctx.fill(panelX, panelY, panelX + panelW, panelY + 1, COLOR_BORDER);
         ctx.fill(panelX, panelY + panelH - 1, panelX + panelW, panelY + panelH, COLOR_BORDER);
         ctx.fill(panelX, panelY, panelX + 1, panelY + panelH, COLOR_BORDER);
         ctx.fill(panelX + panelW - 1, panelY, panelX + panelW, panelY + panelH, COLOR_BORDER);
 
-        // Titre
         String title = LangManager.getInstance().get("title.stats");
         ctx.drawCenteredTextWithShadow(textRenderer,
                 Text.literal("📊 " + title), width / 2, panelY + 8, COLOR_ACCENT);
@@ -56,8 +54,6 @@ public class StatsScreen extends Screen {
         List<String> homes = HomesManager.getInstance().getHomes();
 
         int y = panelY + 26;
-
-        // ─── Cartes de stats ─────────────────────────────────
         int cardW = (panelW - 36) / 3;
         int cardH = 36;
         int[] cardX = {
@@ -66,13 +62,11 @@ public class StatsScreen extends Screen {
             panelX + 12 + (cardW + 6) * 2
         };
 
-        // Total homes
         drawStatCard(ctx, cardX[0], y, cardW, cardH,
                 String.valueOf(homes.size()),
                 LangManager.getInstance().get("stats.total_homes"),
                 COLOR_ACCENT);
 
-        // Favoris
         long favCount = homes.stream()
                 .filter(config::isFavorite).count();
         drawStatCard(ctx, cardX[1], y, cardW, cardH,
@@ -80,7 +74,6 @@ public class StatsScreen extends Screen {
                 LangManager.getInstance().get("stats.favorites"),
                 COLOR_GOLD);
 
-        // Total téléportations
         drawStatCard(ctx, cardX[2], y, cardW, cardH,
                 String.valueOf(config.getTotalTeleports()),
                 LangManager.getInstance().get("stats.total_tp"),
@@ -88,14 +81,12 @@ public class StatsScreen extends Screen {
 
         y += cardH + 16;
 
-        // ─── Séparateur ───────────────────────────────────────
         ctx.fill(panelX + 20, y, panelX + panelW - 20, y + 1, COLOR_BORDER);
         ctx.drawCenteredTextWithShadow(textRenderer,
                 Text.literal("§8" + LangManager.getInstance().get("stats.top_homes")),
                 width / 2, y + 4, COLOR_DIM);
         y += 16;
-
-        // ─── Top 5 homes ──────────────────────────────────────
+        
         Map<String, Integer> counts = config.getAllUseCounts();
         List<Map.Entry<String, Integer>> sorted = new ArrayList<>(counts.entrySet());
         sorted.sort((a, b) -> b.getValue() - a.getValue());
@@ -110,25 +101,19 @@ public class StatsScreen extends Screen {
             int bX   = panelX + 18;
             int fillW = barW * entry.getValue() / maxCount;
 
-            // Fond de barre
             ctx.fill(bX, y, bX + barW, y + 16, COLOR_BAR_BG);
-
-            // Remplissage proportionnel
             int barColor = i < 3 ? medals[i] : COLOR_BAR_FG;
             ctx.fill(bX, y, bX + fillW, y + 16, barColor & 0x55FFFFFF | 0x55000000);
             ctx.fill(bX, y + 14, bX + fillW, y + 16, barColor);
 
-            // Médaille
             String medal = i == 0 ? "🥇" : i == 1 ? "🥈" : i == 2 ? "🥉" : "  #" + (i + 1);
             ctx.drawTextWithShadow(textRenderer,
                     Text.literal(medal), bX + 4, y + 4, COLOR_TEXT);
 
-            // Nom
             ctx.drawCenteredTextWithShadow(textRenderer,
                     Text.literal(entry.getKey()),
                     bX + barW / 2, y + 4, COLOR_TEXT);
 
-            // Compteur
             int v = entry.getValue();
             String visits = v + " " + (v > 1
                     ? LangManager.getInstance().get("stats.visits_plural")
@@ -146,7 +131,6 @@ public class StatsScreen extends Screen {
                     width / 2, y + 8, COLOR_DIM);
         }
 
-        // ─── Bouton Retour ────────────────────────────────────
         int backY = panelY + panelH - 22;
         int backW = 90;
         int backX = panelX + (panelW - backW) / 2;
