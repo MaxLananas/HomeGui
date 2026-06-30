@@ -40,7 +40,7 @@ public class HomesManager {
             isWaitingForResponse = true;
             lastRequestTime = System.currentTimeMillis();
             client.player.connection.sendChat("/homes");
-            LOGGER.info("[HomeGUI] Demande de la liste des homes...");
+            LOGGER.info("[HomeGUI] Homes list loadings....");
         }
     }
 
@@ -55,7 +55,7 @@ public class HomesManager {
                 .trim();
         if (parseHomesMessage(clean)) {
             isWaitingForResponse = false;
-            LOGGER.info("[HomeGUI] Homes trouvés: {}", homes);
+            LOGGER.info("[HomeGUI] Homes finds: {}", homes);
         }
     }
 
