@@ -48,7 +48,7 @@ public class StatsScreen extends Screen {
 
         String title = LangManager.getInstance().get("title.stats");
         ctx.drawCenteredString(font,
-                Component.literal("📊 " + title), width / 2, panelY + 8, COLOR_ACCENT);
+                Component.literal("\uD83D\uDCCA " + title), width / 2, panelY + 8, COLOR_ACCENT);
 
         ModConfig config = ModConfig.getInstance();
         List<String> homes = HomesManager.getInstance().getHomes();
@@ -106,7 +106,7 @@ public class StatsScreen extends Screen {
             ctx.fill(bX, y, bX + fillW, y + 16, (barColor & 0x55FFFFFF) | 0x55000000);
             ctx.fill(bX, y + 14, bX + fillW, y + 16, barColor);
 
-            String medal = i == 0 ? "🥇" : i == 1 ? "🥈" : i == 2 ? "🥉" : "  #" + (i + 1);
+            String medal = i == 0 ? "\uD83E\uDD47" : i == 1 ? "\uD83E\uDD48" : i == 2 ? "\uD83E\uDD49" : "  #" + (i + 1);
             ctx.drawString(font, Component.literal(medal), bX + 4, y + 4, COLOR_TEXT);
 
             ctx.drawCenteredString(font, Component.literal(entry.getKey()),
@@ -124,7 +124,7 @@ public class StatsScreen extends Screen {
 
         if (sorted.isEmpty()) {
             ctx.drawCenteredString(font,
-                    Component.literal("§7Aucune donnée disponible"),
+                    Component.literal("§7Aucune donn\u00e9e disponible"),
                     width / 2, y + 8, COLOR_DIM);
         }
 
