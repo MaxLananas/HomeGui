@@ -3,8 +3,8 @@
   "id": "homegui",
   "version": "${version}",
   "name": "HomeGUI",
-  "description": "A beautiful GUI to manage your homes",
-  "authors": ["YourName"],
+  "description": "GUI to manage your homes",
+  "authors": ["MaxLananas"],
   "contact": {
     "sources": "https://github.com/example/HomeGui"
   },
