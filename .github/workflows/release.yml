@@ -1,82 +1,242 @@
-name: Release
+name: 🚀 Release HomeGUI
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version du release (ex: 1.0.0)'
+        description: '📦 Version (ex: 3.0.0)'
         required: true
+        type: string
+      minecraft_version:
+        description: '🎮 Version Minecraft (ex: 1.21.10)'
+        required: true
+        default: '1.21.10'
+        type: string
       title:
-        description: 'Titre du release (optionnel)'
+        description: '✏️ Titre personnalisé (optionnel)'
         required: false
+        type: string
+      prerelease:
+        description: '🧪 Pre-release ?'
+        required: false
+        default: false
+        type: boolean
+      draft:
+        description: '📝 Draft ?'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
 
 jobs:
-  release:
+  # ──────────────────────────────────────────
+  # JOB 1 : BUILD
+  # ──────────────────────────────────────────
+  build:
+    name: 🔨 Build
     runs-on: ubuntu-latest
+    outputs:
+      jar_name:     ${{ steps.find_jar.outputs.jar_name }}
+      jar_path:     ${{ steps.find_jar.outputs.jar_path }}
+      sources_path: ${{ steps.find_jar.outputs.sources_path }}
 
     steps:
-      - name: Checkout
+      # ── Checkout ──────────────────────────
+      - name: 📥 Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Java 21
+      # ── Java 21 ───────────────────────────
+      - name: ☕ Setup Java 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Setup Gradle
+      # ── Gradle ────────────────────────────
+      - name: 🐘 Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.5.1"
+          cache-cleanup: on-success
 
-      - name: Grant execute permission
-        run: chmod +x gradlew
+      # ── Build ─────────────────────────────
+      - name: 🔨 Build avec Gradle
+        run: |
+          chmod +x gradlew
+          ./gradlew build \
+            --parallel \
+            --build-cache \
+            --no-daemon \
+            --warning-mode none
 
-      - name: Build
-        run: ./gradlew build --parallel --build-cache --no-daemon
+      # ── Debug : lister les JARs produits ──
+      - name: 🔎 Lister les JARs produits
+        run: |
+          echo "=== Contenu de build/libs/ ==="
+          ls -lah build/libs/ || echo "Dossier build/libs/ introuvable"
 
-      - name: Generate commit log
+      # ── Trouver le bon JAR ────────────────
+      - name: 🎯 Identifier le JAR principal
+        id: find_jar
+        run: |
+          # Exclure les JARs sources, dev, shadow, javadoc
+          JAR_PATH=$(find build/libs/ \
+            -name "*.jar" \
+            ! -name "*-sources*" \
+            ! -name "*-dev*" \
+            ! -name "*-shadow*" \
+            ! -name "*-javadoc*" \
+            | sort | tail -1)
+
+          if [ -z "$JAR_PATH" ]; then
+            echo "❌ Aucun JAR trouvé dans build/libs/"
+            ls -la build/libs/ || true
+            exit 1
+          fi
+
+          JAR_NAME=$(basename "$JAR_PATH")
+
+          # Chercher le sources JAR
+          SOURCES_PATH=$(find build/libs/ \
+            -name "*-sources*.jar" \
+            | sort | tail -1 || true)
+
+          echo "✅ JAR principal : $JAR_PATH"
+          echo "📄 Sources       : ${SOURCES_PATH:-aucun}"
+
+          echo "jar_path=$JAR_PATH"         >> "$GITHUB_OUTPUT"
+          echo "jar_name=$JAR_NAME"         >> "$GITHUB_OUTPUT"
+          echo "sources_path=$SOURCES_PATH" >> "$GITHUB_OUTPUT"
+
+      # ── Upload artifact pour le job release
+      - name: 📤 Upload JARs
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-jars
+          path: build/libs/*.jar
+          retention-days: 1
+          if-no-files-found: error
+
+  # ──────────────────────────────────────────
+  # JOB 2 : RELEASE
+  # ──────────────────────────────────────────
+  release:
+    name: 🚀 GitHub Release
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      # ── Checkout (pour git log) ────────────
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ── Télécharger les JARs ──────────────
+      - name: 📥 Download JARs
+        uses: actions/download-artifact@v4
+        with:
+          name: release-jars
+          path: release/
+
+      # ── Vérification ──────────────────────
+      - name: 🔎 Vérifier les fichiers de release
+        run: |
+          echo "=== Fichiers prêts pour la release ==="
+          ls -lah release/
+
+      # ── Changelog ─────────────────────────
+      - name: 📋 Générer les Release Notes
         id: changelog
         run: |
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD | head -1)
+          VERSION="${{ inputs.version }}"
+          MC_VERSION="${{ inputs.minecraft_version }}"
+          JAR_NAME="${{ needs.build.outputs.jar_name }}"
 
-          echo "## 📋 Changes" > notes.md
-          echo "" >> notes.md
-          git log ${LAST_TAG}..HEAD --pretty=format:"- %s \`%h\`" --no-merges >> notes.md
-          echo "" >> notes.md
-          echo "---" >> notes.md
-          echo "" >> notes.md
-          echo "## 🔗 Links" >> notes.md
-          echo "" >> notes.md
-          echo "| | |" >> notes.md
-          echo "|---|---|" >> notes.md
-          echo "| 📥 **Modrinth** | [Download on Modrinth](https://modrinth.com/mod/homegui) |" >> notes.md
-          echo "| 💬 **Discord** | [Join the Discord](https://discord.gg/pnJhKuU2QK) |" >> notes.md
-          echo "" >> notes.md
-          echo "---" >> notes.md
-          echo "" >> notes.md
-          echo "> 🎮 **Minecraft:** 1.21.10 | **Mod Loader:** Fabric" >> notes.md
-          echo "> 📦 **File:** \`homegui-${{ inputs.version }}.jar\`" >> notes.md
+          # Trouver le dernier tag (ou le premier commit)
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null \
+            || git rev-list --max-parents=0 HEAD)
 
-      - name: Copy JAR
+          echo "📌 Dernier tag : $LAST_TAG"
+
+          # Générer le changelog
+          {
+            echo "## 📋 Changelog"
+            echo ""
+
+            COMMITS=$(git log "${LAST_TAG}..HEAD" \
+              --pretty=format:"- %s \`%h\`" \
+              --no-merges 2>/dev/null)
+
+            if [ -z "$COMMITS" ]; then
+              echo "- Aucun changement listé depuis le dernier tag."
+            else
+              echo "$COMMITS"
+            fi
+
+            echo ""
+            echo "---"
+            echo ""
+            echo "## 🔗 Liens utiles"
+            echo ""
+            echo "| | |"
+            echo "|:---:|:---|"
+            echo "| 📥 | [Télécharger sur Modrinth](https://modrinth.com/mod/homegui) |"
+            echo "| 💬 | [Rejoindre le Discord](https://discord.gg/pnJhKuU2QK) |"
+            echo "| 🐛 | [Signaler un bug](https://github.com/${{ github.repository }}/issues) |"
+            echo ""
+            echo "---"
+            echo ""
+            echo "> 🎮 **Minecraft :** \`${MC_VERSION}\` &nbsp;|&nbsp; **Mod Loader :** Fabric &nbsp;|&nbsp; **Java :** 21"
+            echo ">"
+            echo "> 📦 **Fichier :** \`${JAR_NAME}\`"
+            echo ">"
+            echo "> 🏷️ **Version :** \`${VERSION}\`"
+          } > notes.md
+
+          echo "=== Aperçu des notes ==="
+          cat notes.md
+
+      # ── Créer le tag si besoin ─────────────
+      - name: 🏷️ Créer le tag Git
         run: |
-          mkdir -p release
-          cp build/libs/homegui-${{ inputs.version }}.jar release/
-          cp build/libs/homegui-${{ inputs.version }}-sources.jar release/ 2>/dev/null || true
+          TAG="v${{ inputs.version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "⚠️  Le tag $TAG existe déjà, on le réutilise."
+          else
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "$TAG"
+            echo "✅ Tag $TAG créé et poussé."
+          fi
 
-      - name: Create GitHub Release
+      # ── Créer la Release GitHub ────────────
+      - name: 🚀 Créer la Release GitHub
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ inputs.version }}
-          name: ${{ inputs.title || format('HomeGUI v{0}', inputs.version) }}
-          body_path: notes.md
-          files: release/*.jar
-          draft: false
-          prerelease: false
+          tag_name:   v${{ inputs.version }}
+          name:       ${{ inputs.title || format('HomeGUI v{0} — Minecraft {1}', inputs.version, inputs.minecraft_version) }}
+          body_path:  notes.md
+          files:      release/*.jar
+          draft:      ${{ inputs.draft }}
+          prerelease: ${{ inputs.prerelease }}
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Résumé ────────────────────────────
+      - name: 📊 Résumé de la release
+        run: |
+          echo "## ✅ Release publiée avec succès !" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Champ | Valeur |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🏷️ Tag | \`v${{ inputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🎮 Minecraft | \`${{ inputs.minecraft_version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📦 JAR | \`${{ needs.build.outputs.jar_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔗 Release | [Voir la release](https://github.com/${{ github.repository }}/releases/tag/v${{ inputs.version }}) |" >> $GITHUB_STEP_SUMMARY
