@@ -12,7 +12,6 @@ base {
 
 repositories {
     mavenCentral()
-    maven { url "https://maven.terraformersmc.net/releases" }
 }
 
 dependencies {
