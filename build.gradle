@@ -19,38 +19,17 @@ repositories {
 }
 
 loom {
-    splitEnvironmentSourceSets()
-
     mods {
         "homegui" {
             sourceSet sourceSets.main
-            sourceSet sourceSets.client
         }
     }
 }
 
-// ===== Gradle 9.x compatibility =====
-configurations {
-    modImplementation {
-        extendsFrom implementation
-    }
-}
-
-configurations.named('compileClasspath') {
-    extendsFrom configurations.modImplementation
-}
-
-configurations.named('runtimeClasspath') {
-    extendsFrom configurations.modImplementation
-}
-
-// Wire client classpaths too (splitEnvironmentSourceSets)
-configurations.matching { it.name.endsWith('CompileClasspath') }.configureEach {
-    extendsFrom configurations.modImplementation
-}
-
-configurations.matching { it.name.endsWith('RuntimeClasspath') }.configureEach {
-    extendsFrom configurations.modImplementation
+// Fusionne src/client dans src/main (évite les problèmes de classpath Gradle 9)
+sourceSets.main {
+    java.srcDirs      += 'src/client/java'
+    resources.srcDirs += 'src/client/resources'
 }
 
 dependencies {
@@ -60,6 +39,16 @@ dependencies {
     add('modImplementation', "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}")
 
     implementation 'com.google.code.gson:gson:2.10.1'
+}
+
+// Gradle 9 compat : s'assurer que modImplementation est sur le classpath
+afterEvaluate {
+    def modImpl = configurations.findByName('modImplementation')
+    if (modImpl != null) {
+        ['compileClasspath', 'runtimeClasspath'].each { name ->
+            configurations.findByName(name)?.extendsFrom(modImpl)
+        }
+    }
 }
 
 processResources {
