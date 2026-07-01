@@ -4,8 +4,6 @@ import com.maxlananas.homegui.HomesManager;
 import com.maxlananas.homegui.config.LangManager;
 import com.maxlananas.homegui.config.ModConfig;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.events.KeyEvent;
-import net.minecraft.client.gui.components.events.MouseButtonEvent;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -163,8 +161,8 @@ public class StatsScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        int mx = (int) event.x(), my = (int) event.y();
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        int mx = (int) mouseX, my = (int) mouseY;
         int panelX = width / 2 - 150;
         int panelW = 300;
         int panelY = 15;
@@ -179,17 +177,17 @@ public class StatsScreen extends Screen {
             minecraft.setScreen(parent);
             return true;
         }
-        return super.mouseClicked(event, doubleClick);
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
-    public boolean keyPressed(KeyEvent event) {
-        if (event.key() == 256) {
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == 256) {
             assert minecraft != null;
             minecraft.setScreen(parent);
             return true;
         }
-        return super.keyPressed(event);
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
