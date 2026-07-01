@@ -13,7 +13,6 @@ public class ModConfig {
     private static ModConfig instance;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    // FIX: lazy — évite le crash si appelé avant que Fabric ne soit prêt
     private static Path getConfigPath() {
         return FabricLoader.getInstance().getConfigDir().resolve("homegui.json");
     }
