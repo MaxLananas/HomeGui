@@ -35,11 +35,11 @@ public class HistoryScreen extends Screen {
     public void tick() {
         if (needsRebuild) {
             needsRebuild = false;
-            rebuildWidgets();
+            rebuildUI();
         }
     }
 
-    private void rebuildWidgets() {
+    private void rebuildUI() {
         clearWidgets();
 
         int panelX = width / 2 - 130;
