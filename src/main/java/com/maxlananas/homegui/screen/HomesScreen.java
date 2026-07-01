@@ -36,7 +36,6 @@ public class HomesScreen extends Screen {
     private boolean needsRebuild = true;
     private int scrollOffset = 0;
     private int visibleRows = 0;
-    private int selectedIndex = -1;
     private int listAreaTop = 0;
     private int listAreaBottom = 0;
     private int panelX = 0;
@@ -141,9 +140,7 @@ public class HomesScreen extends Screen {
         addRenderableWidget(new StyledButton(startX + (bW + gap) * 3, bottomY, bW, 18, L.get("button.settings"),
                 () -> { if (minecraft != null) minecraft.setScreen(new SettingsScreen(this)); }));
         addRenderableWidget(new StyledButton(startX + (bW + gap) * 4, bottomY, bW, 18, L.get("button.export"),
-                () -> {
-                    cfg.exportData();
-                }));
+                () -> { cfg.exportData(); }));
         addRenderableWidget(new StyledButton(startX + (bW + gap) * 5, bottomY, bW, 18, L.get("button.close"),
                 () -> { if (minecraft != null) minecraft.setScreen(null); }));
 
@@ -339,68 +336,6 @@ public class HomesScreen extends Screen {
             needsRebuild = true;
         }
         return true;
-    }
-
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (searchBox != null && searchBox.isFocused()) {
-            if (keyCode == 256) {
-                searchBox.setFocused(false);
-                return true;
-            }
-            return searchBox.keyPressed(keyCode, scanCode, modifiers);
-        }
-
-        if (filtered.isEmpty()) {
-            if (keyCode == 256) { if (minecraft != null) minecraft.setScreen(null); return true; }
-            return super.keyPressed(keyCode, scanCode, modifiers);
-        }
-
-        int cols = isGrid() ? GRID_COLS : 1;
-
-        if (keyCode == 264) {
-            selectedIndex = Math.min(selectedIndex < 0 ? 0 : selectedIndex + cols, filtered.size() - 1);
-            ensureVisible();
-            return true;
-        }
-        if (keyCode == 265) {
-            selectedIndex = Math.max(selectedIndex < 0 ? 0 : selectedIndex - cols, 0);
-            ensureVisible();
-            return true;
-        }
-        if (keyCode == 262) {
-            selectedIndex = Math.min(selectedIndex < 0 ? 0 : selectedIndex + 1, filtered.size() - 1);
-            ensureVisible();
-            return true;
-        }
-        if (keyCode == 263) {
-            selectedIndex = Math.max(selectedIndex < 0 ? 0 : selectedIndex - 1, 0);
-            ensureVisible();
-            return true;
-        }
-        if (keyCode == 257 || keyCode == 335) {
-            if (selectedIndex >= 0 && selectedIndex < filtered.size()) {
-                String home = filtered.get(selectedIndex);
-                ModConfig.getInstance().incrementUseCount(home);
-                ModConfig.getInstance().addToHistory(home);
-                HomeGuiClient.scheduleCoordCapture(home);
-                HomesManager.getInstance().teleportToHome(home);
-            }
-            return true;
-        }
-        if (keyCode == 256) {
-            if (minecraft != null) minecraft.setScreen(null);
-            return true;
-        }
-
-        return super.keyPressed(keyCode, scanCode, modifiers);
-    }
-
-    private void ensureVisible() {
-        if (selectedIndex < scrollOffset) scrollOffset = selectedIndex;
-        if (selectedIndex >= scrollOffset + visibleRows) scrollOffset = selectedIndex - visibleRows + 1;
-        scrollOffset = Math.max(0, scrollOffset);
-        needsRebuild = true;
     }
 
     @Override
