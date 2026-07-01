@@ -64,16 +64,12 @@ public class SettingsScreen extends Screen {
                 () -> { cfg.setCompactMode(!cfg.isCompactMode()); needsRebuild = true; }));
         y += rowH + gap + 8;
 
-        Theme.drawSeparator(g -> {}, panelX + pad, y, btnW);
-
-        addRenderableWidget(new StyledButton(panelX + pad, y + 4, btnW / 2 - 4, rowH,
+        addRenderableWidget(new StyledButton(panelX + pad, y, btnW / 2 - 4, rowH,
                 L.get("button.export"),
                 () -> { cfg.exportData(); }));
-        addRenderableWidget(new StyledButton(panelX + pad + btnW / 2 + 4, y + 4, btnW / 2 - 4, rowH,
+        addRenderableWidget(new StyledButton(panelX + pad + btnW / 2 + 4, y, btnW / 2 - 4, rowH,
                 L.get("button.import"),
-                () -> {
-                    int count = cfg.importData();
-                }));
+                () -> { cfg.importData(); }));
         y += rowH + gap + 12;
 
         addRenderableWidget(new StyledButton(panelX + pad, y, btnW, rowH,
