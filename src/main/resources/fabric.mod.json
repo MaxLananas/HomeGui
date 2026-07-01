@@ -12,8 +12,7 @@
   "icon": "assets/homegui/icon.png",
   "environment": "client",
   "entrypoints": {
-    "client": ["com.maxlananas.homegui.HomeGuiClient"],
-    "modmenu": ["com.maxlananas.homegui.integration.ModMenuIntegration"]
+    "client": ["com.maxlananas.homegui.HomeGuiClient"]
   },
   "mixins": ["homegui.mixins.json"],
   "depends": {
@@ -21,8 +20,5 @@
     "minecraft":    "~1.21.10",
     "java":         ">=21",
     "fabric-api":   "*"
-  },
-  "suggests": {
-    "modmenu": "*"
   }
 }
