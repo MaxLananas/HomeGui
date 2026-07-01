@@ -18,18 +18,22 @@ repositories {
     mavenCentral()
 }
 
+// ===== Gradle 9 / Loom 1.17 compat =====
+// Crée la configuration AVANT le bloc dependencies
+configurations.maybeCreate('modImplementation').extendsFrom(configurations.getByName('implementation'))
+
+// Filtre les sources client dans main (évite splitEnvironmentSourceSets)
+sourceSets.main {
+    java.srcDirs      += 'src/client/java'
+    resources.srcDirs += 'src/client/resources'
+}
+
 loom {
     mods {
         "homegui" {
             sourceSet sourceSets.main
         }
     }
-}
-
-// Fusionne src/client dans src/main (évite les problèmes de classpath Gradle 9)
-sourceSets.main {
-    java.srcDirs      += 'src/client/java'
-    resources.srcDirs += 'src/client/resources'
 }
 
 dependencies {
@@ -41,12 +45,12 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.10.1'
 }
 
-// Gradle 9 compat : s'assurer que modImplementation est sur le classpath
+// Cable modImplementation sur le classpath de compilation
 afterEvaluate {
-    def modImpl = configurations.findByName('modImplementation')
-    if (modImpl != null) {
-        ['compileClasspath', 'runtimeClasspath'].each { name ->
-            configurations.findByName(name)?.extendsFrom(modImpl)
+    ['compileClasspath', 'runtimeClasspath'].each { name ->
+        def cfg = configurations.findByName(name)
+        if (cfg != null) {
+            cfg.extendsFrom(configurations.getByName('modImplementation'))
         }
     }
 }
