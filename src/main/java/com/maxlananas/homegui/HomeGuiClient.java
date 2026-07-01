@@ -8,6 +8,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
@@ -17,6 +18,8 @@ public class HomeGuiClient implements ClientModInitializer {
 
     public static final Logger LOGGER = LoggerFactory.getLogger("homegui");
     private static KeyMapping openGuiKey;
+    private static String pendingCoordHome = null;
+    private static int coordCaptureCountdown = 0;
 
     @Override
     public void onInitializeClient() {
@@ -37,8 +40,21 @@ public class HomeGuiClient implements ClientModInitializer {
                     client.setScreen(new HomesScreen());
                 }
             }
+            if (coordCaptureCountdown > 0) {
+                coordCaptureCountdown--;
+                if (coordCaptureCountdown == 0 && client.player != null && pendingCoordHome != null) {
+                    var pos = client.player.blockPosition();
+                    ModConfig.getInstance().setHomeCoords(pendingCoordHome, pos.getX(), pos.getY(), pos.getZ());
+                    pendingCoordHome = null;
+                }
+            }
         });
 
         LOGGER.info("[HomeGUI] Initialized ✓");
+    }
+
+    public static void scheduleCoordCapture(String homeName) {
+        pendingCoordHome = homeName;
+        coordCaptureCountdown = 20;
     }
 }
