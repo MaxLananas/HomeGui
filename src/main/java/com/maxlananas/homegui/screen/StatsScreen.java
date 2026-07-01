@@ -5,7 +5,6 @@ import com.maxlananas.homegui.config.LangManager;
 import com.maxlananas.homegui.config.ModConfig;
 import com.maxlananas.homegui.ui.UIRenderer;
 import com.maxlananas.homegui.ui.UITheme;
-import net.minecraft.client.MouseButtonEvent;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -18,9 +17,9 @@ public class StatsScreen extends Screen {
     private boolean backHovered = false;
 
     private int panelX, panelY, panelW, panelH;
-
-    // Coordonnées du bouton back (calculées au render)
-    private int backBX, backBY, backBW = 80, backBH = 14;
+    private int backBX, backBY;
+    private final int backBW = 80;
+    private final int backBH = 14;
 
     public StatsScreen(Screen parent) {
         super(Component.literal("Statistics"));
@@ -39,55 +38,44 @@ public class StatsScreen extends Screen {
         backBY = footerY + (UITheme.FOOTER_H - backBH) / 2;
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // RENDU
-    // ─────────────────────────────────────────────────────────────────────
-
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
         UIRenderer.drawBackground(g, width, height);
         UIRenderer.drawPanel(g, panelX, panelY, panelW, panelH);
 
-        // Header
         UIRenderer.drawHeader(g, panelX, panelY, panelW, UITheme.HEADER_H);
         UIRenderer.drawTitle(g, font,
-                "Stats  " + LangManager.getInstance().get("title.stats"),
+                "[ " + LangManager.getInstance().get("title.stats") + " ]",
                 panelX + panelW / 2, panelY + 8, UITheme.ACCENT_TITLE);
 
         int y   = panelY + UITheme.HEADER_H + 10;
         int pad = UITheme.PAD;
 
-        // Données
         ModConfig    cfg   = ModConfig.getInstance();
         LangManager  lang  = LangManager.getInstance();
         List<String> homes = HomesManager.getInstance().getHomes();
         long favCount = homes.stream().filter(cfg::isFavorite).count();
 
-        // ── Cartes de stats ───────────────────────────────────────────────
         int cardW = (panelW - pad * 2 - 8) / 3;
         int cardH = 40;
 
-        renderStatCard(g,
-                panelX + pad, y, cardW, cardH,
+        renderStatCard(g, panelX + pad, y, cardW, cardH,
                 String.valueOf(homes.size()),
                 lang.get("stats.total_homes"),
                 UITheme.ACCENT_PRIMARY);
 
-        renderStatCard(g,
-                panelX + pad + cardW + 4, y, cardW, cardH,
+        renderStatCard(g, panelX + pad + cardW + 4, y, cardW, cardH,
                 String.valueOf(favCount),
                 lang.get("stats.favorites"),
                 UITheme.COLOR_GOLD);
 
-        renderStatCard(g,
-                panelX + pad + (cardW + 4) * 2, y, cardW, cardH,
+        renderStatCard(g, panelX + pad + (cardW + 4) * 2, y, cardW, cardH,
                 String.valueOf(cfg.getTotalTeleports()),
                 lang.get("stats.total_tp"),
                 UITheme.COLOR_GREEN);
 
         y += cardH + 14;
 
-        // ── Séparateur + titre section ────────────────────────────────────
         UIRenderer.drawSeparator(g, panelX + pad, y, panelW - pad * 2);
         String topLabel = lang.get("stats.top_homes");
         g.drawString(font, Component.literal(topLabel),
@@ -95,7 +83,6 @@ public class StatsScreen extends Screen {
                 y + 4, UITheme.TEXT_DIM, false);
         y += 16;
 
-        // ── Top 5 homes ───────────────────────────────────────────────────
         Map<String, Integer> counts = cfg.getAllUseCounts();
         List<Map.Entry<String, Integer>> sorted = new ArrayList<>(counts.entrySet());
         sorted.sort((a, b) -> b.getValue() - a.getValue());
@@ -117,21 +104,16 @@ public class StatsScreen extends Screen {
                 float ratio    = (float) entry.getValue() / maxCount;
                 int   barColor = i < 3 ? medals[i] : UITheme.ACCENT_PRIMARY;
 
-                UIRenderer.drawProgressBar(g,
-                        panelX + pad, y, barW, barH, ratio, barColor);
+                UIRenderer.drawProgressBar(g, panelX + pad, y, barW, barH, ratio, barColor);
 
-                // Rang
                 String rank = "#" + (i + 1);
                 g.drawString(font, Component.literal(rank),
                         panelX + pad + 3, y + 5, barColor, false);
 
-                // Nom
                 String name = truncate(entry.getKey(), barW - 80);
                 g.drawString(font, Component.literal(name),
-                        panelX + pad + 20, y + 5,
-                        UITheme.TEXT_PRIMARY, false);
+                        panelX + pad + 20, y + 5, UITheme.TEXT_PRIMARY, false);
 
-                // Visites
                 int    v      = entry.getValue();
                 String visits = v + " " + (v > 1
                         ? lang.get("stats.visits_plural")
@@ -144,7 +126,6 @@ public class StatsScreen extends Screen {
             }
         }
 
-        // ── Footer + bouton back ──────────────────────────────────────────
         int footerY = panelY + panelH - UITheme.FOOTER_H;
         UIRenderer.drawFooter(g, panelX, footerY, panelW, UITheme.FOOTER_H);
 
@@ -165,8 +146,7 @@ public class StatsScreen extends Screen {
         super.render(g, mouseX, mouseY, delta);
     }
 
-    private void renderStatCard(GuiGraphics g,
-                                 int x, int y, int w, int h,
+    private void renderStatCard(GuiGraphics g, int x, int y, int w, int h,
                                  String value, String label, int color) {
         UIRenderer.drawStatCard(g, x, y, w, h, color);
         UIRenderer.drawTitle(g, font, value, x + w / 2, y + 8, color);
@@ -182,23 +162,13 @@ public class StatsScreen extends Screen {
         return text + "...";
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // INPUTS — API 1.21.10
-    // ─────────────────────────────────────────────────────────────────────
-
     @Override
-    public boolean mouseClicked(MouseButtonEvent event, boolean consumed) {
-        if (consumed) return super.mouseClicked(event, true);
-
-        int mouseX = (int) event.x();
-        int mouseY = (int) event.y();
-
-        if (event.button() == 0 && backHovered) {
+    public boolean mouseClicked(double mx, double my, int btn) {
+        if (btn == 0 && backHovered) {
             if (minecraft != null) minecraft.setScreen(parent);
             return true;
         }
-
-        return super.mouseClicked(event, false);
+        return super.mouseClicked(mx, my, btn);
     }
 
     @Override
