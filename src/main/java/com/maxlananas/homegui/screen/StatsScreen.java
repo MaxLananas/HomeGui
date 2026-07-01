@@ -3,8 +3,9 @@ package com.maxlananas.homegui.screen;
 import com.maxlananas.homegui.HomesManager;
 import com.maxlananas.homegui.config.LangManager;
 import com.maxlananas.homegui.config.ModConfig;
-import com.maxlananas.homegui.ui.UIRenderer;
-import com.maxlananas.homegui.ui.UITheme;
+import com.maxlananas.homegui.widget.StyledButton;
+import com.maxlananas.homegui.widget.Theme;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -13,168 +14,127 @@ import java.util.*;
 
 public class StatsScreen extends Screen {
 
-    private final Screen parent;
-    private boolean backHovered = false;
+    private static final int PANEL_W = 310;
+    private static final int[] MEDALS = { Theme.GOLD, 0xFFAAAAAA, 0xFFCD7F32 };
 
-    private int panelX, panelY, panelW, panelH;
-    private int backBX, backBY;
-    private final int backBW = 80;
-    private final int backBH = 14;
+    private final Screen parent;
 
     public StatsScreen(Screen parent) {
-        super(Component.literal("Statistics"));
+        super(Component.literal("Stats"));
         this.parent = parent;
     }
 
     @Override
     protected void init() {
-        panelW = Math.min(UITheme.PANEL_W, width - 40);
-        panelH = Math.min(height - 40, 340);
-        panelX = (width  - panelW) / 2;
-        panelY = (height - panelH) / 2;
+        int panelX = width / 2 - PANEL_W / 2;
+        int panelH = height - 40;
+        int backW = 100;
+        int backX = panelX + (PANEL_W - backW) / 2;
+        int backY = 15 + panelH - 24;
 
-        int footerY = panelY + panelH - UITheme.FOOTER_H;
-        backBX = panelX + (panelW - backBW) / 2;
-        backBY = footerY + (UITheme.FOOTER_H - backBH) / 2;
+        addRenderableWidget(new StyledButton(backX, backY, backW, 18,
+                LangManager.getInstance().get("button.back"),
+                () -> { if (minecraft != null) minecraft.setScreen(parent); }));
     }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
-        UIRenderer.drawBackground(g, width, height);
-        UIRenderer.drawPanel(g, panelX, panelY, panelW, panelH);
-
-        UIRenderer.drawHeader(g, panelX, panelY, panelW, UITheme.HEADER_H);
-        UIRenderer.drawTitle(g, font,
-                "[ " + LangManager.getInstance().get("title.stats") + " ]",
-                panelX + panelW / 2, panelY + 8, UITheme.ACCENT_TITLE);
-
-        int y   = panelY + UITheme.HEADER_H + 10;
-        int pad = UITheme.PAD;
-
-        ModConfig    cfg   = ModConfig.getInstance();
-        LangManager  lang  = LangManager.getInstance();
+        LangManager L = LangManager.getInstance();
+        Font f = font;
+        ModConfig cfg = ModConfig.getInstance();
         List<String> homes = HomesManager.getInstance().getHomes();
-        long favCount = homes.stream().filter(cfg::isFavorite).count();
 
-        int cardW = (panelW - pad * 2 - 8) / 3;
-        int cardH = 40;
+        g.fill(0, 0, width, height, Theme.BG);
 
-        renderStatCard(g, panelX + pad, y, cardW, cardH,
-                String.valueOf(homes.size()),
-                lang.get("stats.total_homes"),
-                UITheme.ACCENT_PRIMARY);
+        int panelX = width / 2 - PANEL_W / 2;
+        int panelY = 15;
+        int panelH = height - 40;
 
-        renderStatCard(g, panelX + pad + cardW + 4, y, cardW, cardH,
-                String.valueOf(favCount),
-                lang.get("stats.favorites"),
-                UITheme.COLOR_GOLD);
+        Theme.drawPanel(g, panelX, panelY, PANEL_W, panelH);
+        Theme.drawTextCentered(g, f, "📊 " + L.get("title.stats"),
+                width / 2, panelY + 10, Theme.ACCENT);
 
-        renderStatCard(g, panelX + pad + (cardW + 4) * 2, y, cardW, cardH,
-                String.valueOf(cfg.getTotalTeleports()),
-                lang.get("stats.total_tp"),
-                UITheme.COLOR_GREEN);
+        // ── Stat cards ────────────────────────────
+        int y = panelY + 30;
+        int cw = (PANEL_W - 48) / 3;
+        int ch = 40;
+        int[] cx = { panelX + 12, panelX + 12 + cw + 12, panelX + 12 + (cw + 12) * 2 };
 
-        y += cardH + 14;
+        drawStatCard(g, cx[0], y, cw, ch, String.valueOf(homes.size()),
+                L.get("stats.total_homes"), Theme.ACCENT);
+        drawStatCard(g, cx[1], y, cw, ch,
+                String.valueOf(homes.stream().filter(cfg::isFavorite).count()),
+                L.get("stats.favorites"), Theme.GOLD);
+        drawStatCard(g, cx[2], y, cw, ch, String.valueOf(cfg.getTotalTeleports()),
+                L.get("stats.total_tp"), Theme.SUCCESS);
 
-        UIRenderer.drawSeparator(g, panelX + pad, y, panelW - pad * 2);
-        String topLabel = lang.get("stats.top_homes");
-        g.drawString(font, Component.literal(topLabel),
-                panelX + panelW / 2 - font.width(topLabel) / 2,
-                y + 4, UITheme.TEXT_DIM, false);
-        y += 16;
+        y += ch + 16;
 
+        // ── Separator + section title ─────────────
+        Theme.drawSeparator(g, panelX + 20, y, PANEL_W - 40);
+        y += 6;
+        Theme.drawTextCentered(g, f, "§8" + L.get("stats.top_homes"), width / 2, y, Theme.DIM);
+        y += 14;
+
+        // ── Bar chart ─────────────────────────────
         Map<String, Integer> counts = cfg.getAllUseCounts();
         List<Map.Entry<String, Integer>> sorted = new ArrayList<>(counts.entrySet());
         sorted.sort((a, b) -> b.getValue() - a.getValue());
 
-        int maxCount = sorted.isEmpty() ? 1 : Math.max(1, sorted.get(0).getValue());
-        int barW     = panelW - pad * 2;
-        int barH     = 18;
-        int[] medals = { UITheme.COLOR_GOLD, UITheme.COLOR_SILVER, UITheme.COLOR_BRONZE };
+        int maxVal = sorted.isEmpty() ? 1 : Math.max(1, sorted.get(0).getValue());
+        int barW = PANEL_W - 48;
+        int barX = panelX + 24;
 
-        if (sorted.isEmpty()) {
-            String msg = "Aucune donnee disponible";
-            g.drawString(font, Component.literal(msg),
-                    panelX + panelW / 2 - font.width(msg) / 2,
-                    y + 20, UITheme.TEXT_DIM, false);
-        } else {
-            int shown = Math.min(5, sorted.size());
-            for (int i = 0; i < shown; i++) {
-                Map.Entry<String, Integer> entry = sorted.get(i);
-                float ratio    = (float) entry.getValue() / maxCount;
-                int   barColor = i < 3 ? medals[i] : UITheme.ACCENT_PRIMARY;
+        for (int i = 0; i < Math.min(5, sorted.size()); i++) {
+            Map.Entry<String, Integer> entry = sorted.get(i);
+            int fillW = barW * entry.getValue() / maxVal;
+            int barColor = i < 3 ? MEDALS[i] : Theme.ACCENT_DIM;
 
-                UIRenderer.drawProgressBar(g, panelX + pad, y, barW, barH, ratio, barColor);
+            // Bar background
+            g.fill(barX, y, barX + barW, y + 18, Theme.CARD);
+            // Bar fill
+            g.fill(barX, y, barX + fillW, y + 18, (barColor & 0x55FFFFFF) | 0x33000000);
+            // Bottom accent line
+            g.fill(barX, y + 16, barX + fillW, y + 18, barColor);
 
-                String rank = "#" + (i + 1);
-                g.drawString(font, Component.literal(rank),
-                        panelX + pad + 3, y + 5, barColor, false);
+            // Medal / rank
+            String medal = switch (i) {
+                case 0 -> "🥇";
+                case 1 -> "🥈";
+                case 2 -> "🥉";
+                default -> "#" + (i + 1);
+            };
+            g.drawString(f, Component.literal(medal), barX + 4, y + 5, Theme.TEXT);
 
-                String name = truncate(entry.getKey(), barW - 80);
-                g.drawString(font, Component.literal(name),
-                        panelX + pad + 20, y + 5, UITheme.TEXT_PRIMARY, false);
+            // Name (centered)
+            Theme.drawTextCentered(g, f, Theme.truncate(f, entry.getKey(), barW - 80),
+                    barX + barW / 2, y + 5, Theme.TEXT);
 
-                int    v      = entry.getValue();
-                String visits = v + " " + (v > 1
-                        ? lang.get("stats.visits_plural")
-                        : lang.get("stats.visits"));
-                g.drawString(font, Component.literal(visits),
-                        panelX + pad + barW - font.width(visits) - 4,
-                        y + 5, UITheme.TEXT_DIM, false);
+            // Visit count (right)
+            int v = entry.getValue();
+            String visits = v + " " + (v > 1 ? L.get("stats.visits_plural") : L.get("stats.visits"));
+            g.drawString(f, Component.literal("§8" + visits),
+                    barX + barW - f.width(visits) - 4, y + 5, Theme.DIM);
 
-                y += barH + 4;
-            }
+            y += 22;
         }
 
-        int footerY = panelY + panelH - UITheme.FOOTER_H;
-        UIRenderer.drawFooter(g, panelX, footerY, panelW, UITheme.FOOTER_H);
-
-        backHovered = mouseX >= backBX && mouseX <= backBX + backBW
-                   && mouseY >= backBY && mouseY <= backBY + backBH;
-
-        g.fill(backBX, backBY, backBX + backBW, backBY + backBH,
-                backHovered ? UITheme.BTN_BG_HOVER : UITheme.BTN_BG);
-        UIRenderer.drawBorder(g, backBX, backBY, backBW, backBH,
-                backHovered ? UITheme.ACCENT_PRIMARY : UITheme.BTN_BORDER);
-
-        String backLabel = lang.get("button.back");
-        g.drawString(font, Component.literal(backLabel),
-                backBX + backBW / 2 - font.width(backLabel) / 2,
-                backBY + 3,
-                backHovered ? UITheme.ACCENT_TITLE : UITheme.TEXT_DIM, false);
+        if (sorted.isEmpty()) {
+            Theme.drawTextCentered(g, f, "§7Aucune donnée disponible", width / 2, y + 10, Theme.DIM);
+        }
 
         super.render(g, mouseX, mouseY, delta);
     }
 
-    private void renderStatCard(GuiGraphics g, int x, int y, int w, int h,
-                                 String value, String label, int color) {
-        UIRenderer.drawStatCard(g, x, y, w, h, color);
-        UIRenderer.drawTitle(g, font, value, x + w / 2, y + 8, color);
-        g.drawString(font, Component.literal(label),
-                x + w / 2 - font.width(label) / 2,
-                y + 26, UITheme.TEXT_DIM, false);
-    }
-
-    private String truncate(String text, int maxW) {
-        if (font.width(text) <= maxW) return text;
-        while (!text.isEmpty() && font.width(text + "...") > maxW)
-            text = text.substring(0, text.length() - 1);
-        return text + "...";
+    private void drawStatCard(GuiGraphics g, int x, int y, int w, int h,
+                               String value, String label, int accent) {
+        Theme.drawCard(g, x, y, w, h, accent);
+        Theme.drawTextCentered(g, font, "§l" + value, x + w / 2, y + 10, accent);
+        Theme.drawTextCentered(g, font, "§8" + label, x + w / 2, y + 24, Theme.DIM);
     }
 
     @Override
-    public boolean mouseClicked(double mx, double my, int btn) {
-        if (btn == 0 && backHovered) {
-            if (minecraft != null) minecraft.setScreen(parent);
-            return true;
-        }
-        return super.mouseClicked(mx, my, btn);
-    }
-
-    @Override
-    public void onClose() {
-        if (minecraft != null) minecraft.setScreen(parent);
-    }
+    public void onClose() { if (minecraft != null) minecraft.setScreen(parent); }
 
     @Override
     public boolean isPauseScreen() { return false; }
