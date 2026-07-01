@@ -4,6 +4,8 @@ import com.maxlananas.homegui.HomesManager;
 import com.maxlananas.homegui.config.LangManager;
 import com.maxlananas.homegui.config.ModConfig;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -11,32 +13,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HomesScreen extends Screen {
-    private static final int COLOR_BG           = 0xEE0A0A1A;
-    private static final int COLOR_PANEL        = 0xDD121228;
-    private static final int COLOR_ACCENT       = 0xFF5B5BFF;
-    private static final int COLOR_ACCENT_HOVER = 0xFF8888FF;
-    private static final int COLOR_FAV          = 0xFFFFD700;
-    private static final int COLOR_TEXT         = 0xFFE0E0FF;
-    private static final int COLOR_TEXT_DIM     = 0xFF8888AA;
-    private static final int COLOR_BTN          = 0xFF1E1E3F;
-    private static final int COLOR_BTN_HOVER    = 0xFF2E2E5F;
-    private static final int COLOR_BORDER       = 0xFF3A3A7A;
 
-    private static final int BUTTON_H  = 22;
-    private static final int BUTTON_W  = 220;
-    private static final int SPACING   = 4;
-    private static final int PANEL_PAD = 16;
+    private static final int COLOR_BG     = 0xEE0A0A1A;
+    private static final int COLOR_PANEL  = 0xDD121228;
+    private static final int COLOR_ACCENT = 0xFF5B5BFF;
+    private static final int COLOR_DIM    = 0xFF8888AA;
+    private static final int COLOR_BORDER = 0xFF3A3A7A;
+    private static final int COLOR_FAV    = 0xFFFFD700;
 
-    private final List<String> homes        = new ArrayList<>();
-    private final List<String> filtered     = new ArrayList<>();
-    private int    hoveredIndex             = -1;
-    private String searchQuery              = "";
-    private boolean searchFocused           = false;
-    private int    scrollOffset             = 0;
-    private boolean showFavoritesOnly       = false;
+    private static final int PANEL_W = 280;
+    private static final int PAD     = 16;
 
-    private int btnHistoryX, btnStatsX, btnRefreshX, btnCloseX;
-    private int bottomBtnY;
+    private EditBox searchBox;
+    private final List<String> allHomes  = new ArrayList<>();
+    private final List<String> filtered  = new ArrayList<>();
+    private boolean showFavOnly = false;
+    private boolean needsRebuild = true;
 
     public HomesScreen() {
         super(Component.literal("HomeGUI"));
@@ -44,262 +36,152 @@ public class HomesScreen extends Screen {
 
     @Override
     protected void init() {
-        homes.clear();
-        homes.addAll(HomesManager.getInstance().getHomes());
-        applyFilter();
+        allHomes.clear();
+        allHomes.addAll(HomesManager.getInstance().getHomes());
+        needsRebuild = true;
+    }
+
+    @Override
+    public void tick() {
+        if (needsRebuild) {
+            needsRebuild = false;
+            rebuildWidgets();
+        }
     }
 
     private void applyFilter() {
         filtered.clear();
-        for (String home : homes) {
-            boolean matchSearch = searchQuery.isEmpty() ||
-                    home.toLowerCase().contains(searchQuery.toLowerCase());
-            boolean matchFav = !showFavoritesOnly ||
-                    ModConfig.getInstance().isFavorite(home);
-            if (matchSearch && matchFav) filtered.add(home);
+        String q = (searchBox != null) ? searchBox.getValue().toLowerCase() : "";
+        for (String h : allHomes) {
+            boolean match = q.isEmpty() || h.toLowerCase().contains(q);
+            boolean fav   = !showFavOnly || ModConfig.getInstance().isFavorite(h);
+            if (match && fav) filtered.add(h);
         }
-        scrollOffset = 0;
     }
 
-    private void drawOutline(GuiGraphics ctx, int x, int y, int w, int h, int color) {
-        ctx.fill(x, y, x + w, y + 1, color);
-        ctx.fill(x, y + h - 1, x + w, y + h, color);
-        ctx.fill(x, y, x + 1, y + h, color);
-        ctx.fill(x + w - 1, y, x + w, y + h, color);
+    private void rebuildWidgets() {
+        String prevQuery = (searchBox != null) ? searchBox.getValue() : "";
+        clearWidgets();
+
+        int panelX = width / 2 - PANEL_W / 2;
+        int searchW = PANEL_W - PAD * 2 - 26;
+        int searchY = 48;
+
+        // Search box
+        searchBox = new EditBox(font, panelX + PAD, searchY, searchW, 16, Component.literal("Search"));
+        searchBox.setValue(prevQuery);
+        searchBox.setResponder(t -> needsRebuild = true);
+        addRenderableWidget(searchBox);
+
+        // Favorite filter toggle
+        addRenderableWidget(Button.builder(
+                Component.literal(showFavOnly ? "★" : "☆"),
+                b -> { showFavOnly = !showFavOnly; needsRebuild = true; }
+        ).bounds(panelX + PAD + searchW + 4, searchY, 22, 16).build());
+
+        // Home list
+        applyFilter();
+        int listY = searchY + 22;
+        int maxVisible = Math.min(filtered.size(), 20);
+        int mainBtnW = PANEL_W - PAD * 2 - 26;
+
+        for (int i = 0; i < maxVisible; i++) {
+            final String home = filtered.get(i);
+            boolean isFav = ModConfig.getInstance().isFavorite(home);
+            int uses = ModConfig.getInstance().getUseCount(home);
+
+            String label = (isFav ? "★ " : "") + home + (uses > 0 ? " §8×" + uses : "");
+            int btnY = listY + i * 24;
+
+            // TP button
+            addRenderableWidget(Button.builder(
+                    Component.literal(label),
+                    b -> {
+                        ModConfig.getInstance().incrementUseCount(home);
+                        ModConfig.getInstance().addToHistory(home);
+                        HomesManager.getInstance().teleportToHome(home);
+                    }
+            ).bounds(panelX + PAD, btnY, mainBtnW, 20).build());
+
+            // Star button
+            addRenderableWidget(Button.builder(
+                    Component.literal(isFav ? "★" : "☆"),
+                    b -> {
+                        ModConfig.getInstance().toggleFavorite(home);
+                        needsRebuild = true;
+                    }
+            ).bounds(panelX + PAD + mainBtnW + 4, btnY, 22, 20).build());
+        }
+
+        // Bottom buttons
+        int bottomY = 20 + (height - 50) - 22;
+        int bW = 52;
+        int gap = 4;
+        int totalW = bW * 4 + gap * 3;
+        int startX = panelX + (PANEL_W - totalW) / 2;
+
+        addRenderableWidget(Button.builder(
+                Component.literal(LangManager.getInstance().get("button.refresh")),
+                b -> {
+                    HomesManager.getInstance().requestHomes();
+                    allHomes.clear();
+                    allHomes.addAll(HomesManager.getInstance().getHomes());
+                    needsRebuild = true;
+                }
+        ).bounds(startX, bottomY, bW, 16).build());
+
+        addRenderableWidget(Button.builder(
+                Component.literal(LangManager.getInstance().get("button.recent")),
+                b -> { if (minecraft != null) minecraft.setScreen(new HistoryScreen(this)); }
+        ).bounds(startX + bW + gap, bottomY, bW, 16).build());
+
+        addRenderableWidget(Button.builder(
+                Component.literal("Stats"),
+                b -> { if (minecraft != null) minecraft.setScreen(new StatsScreen(this)); }
+        ).bounds(startX + (bW + gap) * 2, bottomY, bW, 16).build());
+
+        addRenderableWidget(Button.builder(
+                Component.literal(LangManager.getInstance().get("button.close")),
+                b -> { if (minecraft != null) minecraft.setScreen(null); }
+        ).bounds(startX + (bW + gap) * 3, bottomY, bW, 16).build());
     }
 
     @Override
     public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         ctx.fill(0, 0, width, height, COLOR_BG);
 
-        int panelX = width / 2 - 140;
-        int panelW = 280;
+        int panelX = width / 2 - PANEL_W / 2;
         int panelY = 20;
         int panelH = height - 50;
-        drawPanel(ctx, panelX, panelY, panelX + panelW, panelY + panelH);
 
-        String title = LangManager.getInstance().get("title.homes");
-        ctx.drawCenteredString(font, Component.literal("✦ " + title + " ✦"),
+        ctx.fill(panelX, panelY, panelX + PANEL_W, panelY + panelH, COLOR_PANEL);
+        drawBorder(ctx, panelX, panelY, PANEL_W, panelH, COLOR_BORDER);
+
+        ctx.drawCenteredString(font,
+                Component.literal("✦ " + LangManager.getInstance().get("title.homes") + " ✦"),
                 width / 2, panelY + 8, COLOR_ACCENT);
 
-        int searchY = panelY + 26;
-        int searchX = panelX + PANEL_PAD;
-        int searchW = panelW - PANEL_PAD * 2 - 28;
-
-        ctx.fill(searchX, searchY, searchX + searchW, searchY + 16,
-                searchFocused ? 0xFF1A1A4A : 0xFF111130);
-        drawOutline(ctx, searchX, searchY, searchW, 16,
-                searchFocused ? COLOR_ACCENT : COLOR_BORDER);
-        String searchDisplay = searchQuery.isEmpty() && !searchFocused
-                ? "§7\uD83D\uDD0D Search..."
-                : "§f" + searchQuery + (searchFocused ? "§7|" : "");
-        ctx.drawString(font, Component.literal(searchDisplay),
-                searchX + 4, searchY + 4, COLOR_TEXT);
-
-        int favBtnX = searchX + searchW + 4;
-        boolean favBtnHover = mouseX >= favBtnX && mouseX <= favBtnX + 22
-                && mouseY >= searchY && mouseY <= searchY + 16;
-        ctx.fill(favBtnX, searchY, favBtnX + 22, searchY + 16,
-                showFavoritesOnly ? 0xFF3A2A00 : (favBtnHover ? COLOR_BTN_HOVER : COLOR_BTN));
-        drawOutline(ctx, favBtnX, searchY, 22, 16,
-                showFavoritesOnly ? COLOR_FAV : COLOR_BORDER);
-        ctx.drawCenteredString(font, Component.literal("★"),
-                favBtnX + 11, searchY + 4,
-                showFavoritesOnly ? COLOR_FAV : COLOR_TEXT_DIM);
-
-        int listStartY = searchY + 22;
-        int listEndY   = panelY + panelH - 30;
-        int visibleRows = (listEndY - listStartY) / (BUTTON_H + SPACING);
-        hoveredIndex = -1;
-
         if (filtered.isEmpty()) {
-            String msg = homes.isEmpty()
+            String msg = allHomes.isEmpty()
                     ? LangManager.getInstance().get("message.no_homes")
-                    : LangManager.getInstance().get("message.no_results") + " \"" + searchQuery + "\"";
+                    : LangManager.getInstance().get("message.no_results");
             ctx.drawCenteredString(font, Component.literal("§7" + msg),
-                    width / 2, listStartY + 30, COLOR_TEXT_DIM);
-        } else {
-            int maxScroll = Math.max(0, filtered.size() - visibleRows);
-            scrollOffset = Math.min(scrollOffset, maxScroll);
-
-            for (int i = 0; i < visibleRows && (i + scrollOffset) < filtered.size(); i++) {
-                int idx  = i + scrollOffset;
-                String home = filtered.get(idx);
-                int btnY = listStartY + i * (BUTTON_H + SPACING);
-                int btnX = panelX + PANEL_PAD;
-                int btnW = panelW - PANEL_PAD * 2;
-
-                boolean hovered = mouseX >= btnX && mouseX <= btnX + btnW
-                        && mouseY >= btnY && mouseY <= btnY + BUTTON_H;
-                boolean isFav   = ModConfig.getInstance().isFavorite(home);
-                int     uses    = ModConfig.getInstance().getUseCount(home);
-
-                if (hovered) hoveredIndex = idx;
-                int bgColor = hovered ? COLOR_ACCENT_HOVER : COLOR_BTN;
-                ctx.fill(btnX, btnY, btnX + btnW, btnY + BUTTON_H, bgColor);
-                drawOutline(ctx, btnX, btnY, btnW, BUTTON_H,
-                        isFav ? COLOR_FAV : (hovered ? COLOR_ACCENT : COLOR_BORDER));
-                if (isFav) {
-                    ctx.drawString(font, Component.literal("★"),
-                            btnX + 5, btnY + 7, COLOR_FAV);
-                }
-                ctx.drawCenteredString(font, Component.literal(home),
-                        btnX + btnW / 2, btnY + 7, hovered ? 0xFFFFFFFF : COLOR_TEXT);
-                if (uses > 0) {
-                    ctx.drawString(font, Component.literal("§8×" + uses),
-                            btnX + btnW - 22, btnY + 7, COLOR_TEXT_DIM);
-                }
-            }
-
-            if (filtered.size() > visibleRows) {
-                int sbX    = panelX + panelW - 6;
-                int sbH    = listEndY - listStartY;
-                int thumbH = Math.max(16, sbH * visibleRows / filtered.size());
-                int thumbY = listStartY + (sbH - thumbH) * scrollOffset
-                        / Math.max(1, filtered.size() - visibleRows);
-                ctx.fill(sbX, listStartY, sbX + 4, listEndY, 0xFF1A1A3A);
-                ctx.fill(sbX, thumbY, sbX + 4, thumbY + thumbH, COLOR_ACCENT);
-            }
-        }
-
-        bottomBtnY = panelY + panelH - 22;
-        renderBottomButtons(ctx, mouseX, mouseY);
-
-        if (hoveredIndex >= 0 && hoveredIndex < filtered.size()) {
-            String h = filtered.get(hoveredIndex);
-            String tip = LangManager.getInstance().get("message.click_to_tp") + " | "
-                    + LangManager.getInstance().get("favorite.right_click");
-            String line1 = "§b" + h;
-            String line2 = "§7" + tip;
-            int tw = Math.max(font.width(line1), font.width(line2)) + 8;
-            int th = 24;
-            int tx = Math.min(mouseX + 12, width - tw - 4);
-            int ty = Math.max(mouseY - 12, 4);
-            ctx.fill(tx - 3, ty - 3, tx + tw + 3, ty + th + 3, 0xF0100010);
-            drawOutline(ctx, tx - 3, ty - 3, tw + 6, th + 6, COLOR_ACCENT);
-            ctx.drawString(font, Component.literal(line1), tx, ty + 2, 0xFFFFFF);
-            ctx.drawString(font, Component.literal(line2), tx, ty + 13, 0xAAAAAA);
+                    width / 2, panelY + 100, COLOR_DIM);
         }
 
         super.render(ctx, mouseX, mouseY, delta);
     }
 
-    private void drawPanel(GuiGraphics ctx, int x1, int y1, int x2, int y2) {
-        ctx.fill(x1, y1, x2, y2, COLOR_PANEL);
-        ctx.fill(x1, y1, x2, y1 + 1, COLOR_BORDER);
-        ctx.fill(x1, y2 - 1, x2, y2, COLOR_BORDER);
-        ctx.fill(x1, y1, x1 + 1, y2, COLOR_BORDER);
-        ctx.fill(x2 - 1, y1, x2, y2, COLOR_BORDER);
-    }
-
-    private void renderBottomButtons(GuiGraphics ctx, int mouseX, int mouseY) {
-        int panelX = width / 2 - 140;
-        int panelW = 280;
-        int bW = 52;
-        int bH = 16;
-        int gap = 4;
-        int totalW = bW * 4 + gap * 3;
-        int startX = panelX + (panelW - totalW) / 2;
-
-        String[] labels = {
-            LangManager.getInstance().get("button.refresh"),
-            LangManager.getInstance().get("button.recent"),
-            "Stats",
-            LangManager.getInstance().get("button.close")
-        };
-
-        btnRefreshX = startX;
-        btnHistoryX = startX + bW + gap;
-        btnStatsX   = startX + (bW + gap) * 2;
-        btnCloseX   = startX + (bW + gap) * 3;
-
-        int[] xs = { btnRefreshX, btnHistoryX, btnStatsX, btnCloseX };
-
-        for (int i = 0; i < 4; i++) {
-            boolean hov = mouseX >= xs[i] && mouseX <= xs[i] + bW
-                    && mouseY >= bottomBtnY && mouseY <= bottomBtnY + bH;
-            ctx.fill(xs[i], bottomBtnY, xs[i] + bW, bottomBtnY + bH,
-                    hov ? COLOR_BTN_HOVER : COLOR_BTN);
-            drawOutline(ctx, xs[i], bottomBtnY, bW, bH,
-                    hov ? COLOR_ACCENT : COLOR_BORDER);
-            ctx.drawCenteredString(font, Component.literal(labels[i]),
-                    xs[i] + bW / 2, bottomBtnY + 4,
-                    hov ? 0xFFFFFFFF : COLOR_TEXT_DIM);
-        }
+    private static void drawBorder(GuiGraphics ctx, int x, int y, int w, int h, int c) {
+        ctx.fill(x, y, x + w, y + 1, c);
+        ctx.fill(x, y + h - 1, x + w, y + h, c);
+        ctx.fill(x, y, x + 1, y + h, c);
+        ctx.fill(x + w - 1, y, x + w, y + h, c);
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        int mx = (int) mouseX, my = (int) mouseY;
-        int panelX  = width / 2 - 140;
-        int panelW  = 280;
-        int panelY  = 20;
-        int searchY = panelY + 26;
-        int searchX = panelX + PANEL_PAD;
-        int searchW = panelW - PANEL_PAD * 2 - 28;
-        int favBtnX = searchX + searchW + 4;
-
-        if (mx >= searchX && mx <= searchX + searchW
-                && my >= searchY && my <= searchY + 16) {
-            searchFocused = !searchFocused;
-            return true;
-        }
-
-        if (mx >= favBtnX && mx <= favBtnX + 22
-                && my >= searchY && my <= searchY + 16) {
-            showFavoritesOnly = !showFavoritesOnly;
-            applyFilter();
-            return true;
-        }
-
-        if (hoveredIndex >= 0 && hoveredIndex < filtered.size()) {
-            String home = filtered.get(hoveredIndex);
-            if (button == 1) {
-                ModConfig.getInstance().toggleFavorite(home);
-            } else {
-                ModConfig.getInstance().incrementUseCount(home);
-                ModConfig.getInstance().addToHistory(home);
-                HomesManager.getInstance().teleportToHome(home);
-            }
-            return true;
-        }
-
-        if (my >= bottomBtnY && my <= bottomBtnY + 16) {
-            if (mx >= btnRefreshX && mx <= btnRefreshX + 52) {
-                HomesManager.getInstance().requestHomes();
-                homes.clear();
-                homes.addAll(HomesManager.getInstance().getHomes());
-                applyFilter();
-                return true;
-            }
-            if (mx >= btnHistoryX && mx <= btnHistoryX + 52) {
-                assert minecraft != null;
-                minecraft.setScreen(new HistoryScreen(this));
-                return true;
-            }
-            if (mx >= btnStatsX && mx <= btnStatsX + 52) {
-                assert minecraft != null;
-                minecraft.setScreen(new StatsScreen(this));
-                return true;
-            }
-            if (mx >= btnCloseX && mx <= btnCloseX + 52) {
-                assert minecraft != null;
-                minecraft.setScreen(null);
-                return true;
-            }
-        }
-
-        return super.mouseClicked(mouseX, mouseY, button);
-    }
-
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == 256) {
-            assert minecraft != null;
-            minecraft.setScreen(null);
-            return true;
-        }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+    public void onClose() {
+        if (minecraft != null) minecraft.setScreen(null);
     }
 
     @Override
