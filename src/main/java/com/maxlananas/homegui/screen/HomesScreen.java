@@ -3,8 +3,10 @@ package com.maxlananas.homegui.screen;
 import com.maxlananas.homegui.HomesManager;
 import com.maxlananas.homegui.config.LangManager;
 import com.maxlananas.homegui.config.ModConfig;
-import com.maxlananas.homegui.ui.UIRenderer;
-import com.maxlananas.homegui.ui.UITheme;
+import com.maxlananas.homegui.widget.StyledButton;
+import com.maxlananas.homegui.widget.Theme;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -15,18 +17,21 @@ import java.util.List;
 
 public class HomesScreen extends Screen {
 
-    private final List<String> allHomes = new ArrayList<>();
-    private final List<String> filtered = new ArrayList<>();
+    private static final int PANEL_W = 300;
+    private static final int PAD     = 16;
 
     private EditBox searchBox;
-    private boolean showFavOnly  = false;
-    private int     scrollOffset = 0;
-    private int     hoveredIndex = -1;
-    private long    openTime;
+    private String savedSearch = "";
 
-    private int panelX, panelY, panelW, panelH;
-    private int listX, listY, listW, listH;
-    private int maxVisible;
+    private final List<String> allHomes  = new ArrayList<>();
+    private final List<String> filtered  = new ArrayList<>();
+    private boolean showFavOnly = false;
+    private boolean needsRebuild = true;
+
+    // Track rendered home buttons for overlays
+    private final List<StyledButton> homeButtons = new ArrayList<>();
+    private final List<StyledButton> starButtons = new ArrayList<>();
+    private final List<String>       displayedHomes = new ArrayList<>();
 
     public HomesScreen() {
         super(Component.literal("HomeGUI"));
@@ -34,297 +39,186 @@ public class HomesScreen extends Screen {
 
     @Override
     protected void init() {
-        openTime = System.currentTimeMillis();
-
-        panelW = Math.min(UITheme.PANEL_W, width - 40);
-        panelH = Math.min(height - 40, 320);
-        panelX = (width  - panelW) / 2;
-        panelY = (height - panelH) / 2;
-
-        listX = panelX + UITheme.PAD;
-        listY = panelY + UITheme.HEADER_H + 26;
-        listW = panelW - UITheme.PAD * 2 - UITheme.SCROLLBAR_W - 2;
-        listH = panelH - UITheme.HEADER_H - UITheme.FOOTER_H - 30;
-        maxVisible = Math.max(1, listH / (UITheme.ROW_H + UITheme.ROW_GAP));
-
+        if (searchBox != null) savedSearch = searchBox.getValue();
         allHomes.clear();
         allHomes.addAll(HomesManager.getInstance().getHomes());
+        needsRebuild = true;
+    }
 
-        String prevQuery = (searchBox != null) ? searchBox.getValue() : "";
-        int sbY = panelY + UITheme.HEADER_H + 4;
-        int sbW = panelW - UITheme.PAD * 2 - 24;
-
-        searchBox = new EditBox(font, listX, sbY, sbW, 16, Component.literal(""));
-        searchBox.setValue(prevQuery);
-        searchBox.setHint(Component.literal("Rechercher..."));
-        searchBox.setBordered(false);
-        searchBox.setTextColor(UITheme.TEXT_PRIMARY);
-        searchBox.setResponder(t -> {
-            scrollOffset = 0;
-            applyFilter();
-        });
-        addRenderableWidget(searchBox);
-
-        applyFilter();
+    @Override
+    public void tick() {
+        if (needsRebuild) {
+            needsRebuild = false;
+            rebuildUI();
+        }
     }
 
     private void applyFilter() {
         filtered.clear();
-        String q = (searchBox != null) ? searchBox.getValue().toLowerCase().trim() : "";
-        ModConfig cfg = ModConfig.getInstance();
-
-        List<String> favs   = new ArrayList<>();
-        List<String> others = new ArrayList<>();
-
+        String q = savedSearch.toLowerCase();
         for (String h : allHomes) {
-            boolean matchQ   = q.isEmpty() || h.toLowerCase().contains(q);
-            boolean isFav    = cfg.isFavorite(h);
-            boolean matchFav = !showFavOnly || isFav;
-            if (matchQ && matchFav) {
-                if (isFav) favs.add(h);
-                else       others.add(h);
-            }
+            boolean match = q.isEmpty() || h.toLowerCase().contains(q);
+            boolean fav   = !showFavOnly || ModConfig.getInstance().isFavorite(h);
+            if (match && fav) filtered.add(h);
         }
-        filtered.addAll(favs);
-        filtered.addAll(others);
-
-        int maxScroll = Math.max(0, filtered.size() - maxVisible);
-        scrollOffset  = Math.min(scrollOffset, maxScroll);
     }
 
-    private void refresh() {
-        HomesManager.getInstance().requestHomes();
-        allHomes.clear();
-        allHomes.addAll(HomesManager.getInstance().getHomes());
-        scrollOffset = 0;
+    private void rebuildUI() {
+        clearWidgets();
+        homeButtons.clear();
+        starButtons.clear();
+        displayedHomes.clear();
+
+        int panelX = width / 2 - PANEL_W / 2;
+        int searchW = PANEL_W - PAD * 2 - 26;
+        int searchY = 50;
+
+        // ── Search box ────────────────────────────
+        searchBox = new EditBox(font, panelX + PAD, searchY, searchW, 16, Component.literal("Search"));
+        searchBox.setValue(savedSearch);
+        searchBox.setResponder(t -> { savedSearch = t; needsRebuild = true; });
+        addRenderableWidget(searchBox);
+
+        // ── Favorite filter toggle ────────────────
+        addRenderableWidget(new StyledButton(
+                panelX + PAD + searchW + 4, searchY, 22, 16,
+                showFavOnly ? "★" : "☆",
+                () -> { showFavOnly = !showFavOnly; needsRebuild = true; },
+                showFavOnly ? 0xFF3A2A00 : Theme.BTN,
+                showFavOnly ? 0xFF5A4A10 : Theme.BTN_HOV,
+                showFavOnly ? Theme.GOLD : Theme.BORDER,
+                showFavOnly ? Theme.GOLD : Theme.DIM,
+                showFavOnly ? Theme.GOLD : Theme.TEXT));
+
+        // ── Home list ─────────────────────────────
         applyFilter();
+        int listY = searchY + 24;
+        int mainBtnW = PANEL_W - PAD * 2 - 28;
+        int maxVisible = Math.min(filtered.size(), 20);
+
+        for (int i = 0; i < maxVisible; i++) {
+            final String home = filtered.get(i);
+            int btnY = listY + i * 24;
+
+            // Home button
+            StyledButton homeBtn = new StyledButton(panelX + PAD, btnY, mainBtnW, 20, home,
+                    () -> {
+                        ModConfig.getInstance().incrementUseCount(home);
+                        ModConfig.getInstance().addToHistory(home);
+                        HomesManager.getInstance().teleportToHome(home);
+                    });
+            addRenderableWidget(homeBtn);
+            homeButtons.add(homeBtn);
+            displayedHomes.add(home);
+
+            // Star toggle
+            boolean isFav = ModConfig.getInstance().isFavorite(home);
+            StyledButton starBtn = new StyledButton(
+                    panelX + PAD + mainBtnW + 4, btnY, 22, 20,
+                    isFav ? "★" : "☆",
+                    () -> { ModConfig.getInstance().toggleFavorite(home); needsRebuild = true; },
+                    isFav ? 0xFF3A2A00 : Theme.BTN,
+                    isFav ? 0xFF5A4A10 : Theme.BTN_HOV,
+                    isFav ? Theme.GOLD : Theme.BORDER,
+                    isFav ? Theme.GOLD : Theme.DIM,
+                    isFav ? Theme.GOLD : Theme.TEXT);
+            addRenderableWidget(starBtn);
+            starButtons.add(starBtn);
+        }
+
+        // ── Bottom nav buttons ────────────────────
+        int panelH = height - 50;
+        int bottomY = 20 + panelH - 24;
+        int bW = 60, gap = 6;
+        int total = bW * 4 + gap * 3;
+        int startX = panelX + (PANEL_W - total) / 2;
+        LangManager L = LangManager.getInstance();
+
+        addRenderableWidget(new StyledButton(startX, bottomY, bW, 18, L.get("button.refresh"),
+                () -> {
+                    HomesManager.getInstance().requestHomes();
+                    allHomes.clear();
+                    allHomes.addAll(HomesManager.getInstance().getHomes());
+                    needsRebuild = true;
+                }));
+        addRenderableWidget(new StyledButton(startX + bW + gap, bottomY, bW, 18, L.get("button.recent"),
+                () -> { if (minecraft != null) minecraft.setScreen(new HistoryScreen(this)); }));
+        addRenderableWidget(new StyledButton(startX + (bW + gap) * 2, bottomY, bW, 18, "Stats",
+                () -> { if (minecraft != null) minecraft.setScreen(new StatsScreen(this)); }));
+        addRenderableWidget(new StyledButton(startX + (bW + gap) * 3, bottomY, bW, 18, L.get("button.close"),
+                () -> { if (minecraft != null) minecraft.setScreen(null); }));
     }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
-        UIRenderer.drawBackground(g, width, height);
-        UIRenderer.drawPanel(g, panelX, panelY, panelW, panelH);
-        renderHeader(g);
-        renderSearchBar(g, mouseX, mouseY);
-        renderHomeList(g, mouseX, mouseY);
-        renderFooter(g, mouseX, mouseY);
-        super.render(g, mouseX, mouseY, delta);
-    }
+        LangManager L = LangManager.getInstance();
+        Font f = font;
 
-    private void renderHeader(GuiGraphics g) {
-        UIRenderer.drawHeader(g, panelX, panelY, panelW, UITheme.HEADER_H);
-        UIRenderer.drawTitle(g, font,
-                "[ " + LangManager.getInstance().get("title.homes") + " ]",
-                panelX + panelW / 2, panelY + 8, UITheme.ACCENT_TITLE);
+        // Full background
+        g.fill(0, 0, width, height, Theme.BG);
 
-        String badge = filtered.size() + "/" + allHomes.size();
-        UIRenderer.drawBadge(g, font, badge,
-                panelX + panelW - UITheme.PAD - font.width(badge) / 2 - 3,
-                panelY + 9, UITheme.TEXT_DIM);
+        int panelX = width / 2 - PANEL_W / 2;
+        int panelY = 20;
+        int panelH = height - 50;
 
-        if (HomesManager.getInstance().isWaiting()) {
-            long t      = System.currentTimeMillis() / 300 % 4;
-            String dots = ".".repeat((int) t + 1);
-            g.drawString(font,
-                    Component.literal(LangManager.getInstance().get("message.loading") + dots),
-                    panelX + UITheme.PAD, panelY + 9,
-                    UITheme.TEXT_DIM, false);
+        // Panel
+        Theme.drawPanel(g, panelX, panelY, PANEL_W, panelH);
+
+        // Title
+        Theme.drawTextCentered(g, f, "✦ " + L.get("title.homes") + " ✦",
+                width / 2, panelY + 10, Theme.ACCENT);
+
+        // Subtitle: home count
+        Theme.drawTextCentered(g, f, "§8" + allHomes.size() + " " + L.get("stats.total_homes"),
+                width / 2, panelY + 24, Theme.DIM);
+
+        // Search hint (when empty and unfocused)
+        if (searchBox != null && searchBox.getValue().isEmpty() && !searchBox.isFocused()) {
+            g.drawString(f, Component.literal("§7" + L.get("hint.search")),
+                    searchBox.getX() + 4, searchBox.getY() + 4, Theme.FAINT);
         }
-    }
 
-    private void renderSearchBar(GuiGraphics g, int mouseX, int mouseY) {
-        int sbY = panelY + UITheme.HEADER_H + 4;
-        int sbW = panelW - UITheme.PAD * 2 - 24;
+        // Separator
+        Theme.drawSeparator(g, panelX + PAD, 46, PANEL_W - PAD * 2);
 
-        boolean sbHov = mouseX >= listX && mouseX <= listX + sbW
-                     && mouseY >= sbY   && mouseY <= sbY + 16;
-
-        g.fill(listX - 2, sbY - 2, listX + sbW + 2, sbY + 18,
-                sbHov ? UITheme.BG_HOVER : UITheme.BG_ELEMENT);
-        UIRenderer.drawBorder(g, listX - 2, sbY - 2, sbW + 4, 20,
-                searchBox != null && searchBox.isFocused()
-                        ? UITheme.ACCENT_PRIMARY : UITheme.BORDER_NORMAL);
-
-        int favBtnX = listX + sbW + 4;
-        boolean favHov = mouseX >= favBtnX && mouseX <= favBtnX + 20
-                      && mouseY >= sbY - 2  && mouseY <= sbY + 18;
-
-        g.fill(favBtnX, sbY - 2, favBtnX + 20, sbY + 18,
-                favHov ? UITheme.BG_HOVER : UITheme.BG_ELEMENT);
-        UIRenderer.drawBorder(g, favBtnX, sbY - 2, 20, 20,
-                showFavOnly ? UITheme.COLOR_GOLD : UITheme.BORDER_NORMAL);
-        g.drawString(font,
-                Component.literal(showFavOnly ? "*" : "o"),
-                favBtnX + 5, sbY + 2,
-                showFavOnly ? UITheme.COLOR_GOLD : UITheme.TEXT_DIM, false);
-    }
-
-    private void renderHomeList(GuiGraphics g, int mouseX, int mouseY) {
-        hoveredIndex = -1;
-        ModConfig cfg = ModConfig.getInstance();
-
+        // Empty state
         if (filtered.isEmpty()) {
-            String msg = allHomes.isEmpty()
-                    ? LangManager.getInstance().get("message.no_homes")
-                    : LangManager.getInstance().get("message.no_results");
-            g.drawString(font, Component.literal(msg),
-                    listX + listW / 2 - font.width(msg) / 2,
-                    listY + listH / 2 - 4,
-                    UITheme.TEXT_DIM, false);
-            return;
+            int cy = 120;
+            if (allHomes.isEmpty()) {
+                Theme.drawTextCentered(g, f, "§7☁  " + L.get("message.no_homes"), width / 2, cy, Theme.DIM);
+                Theme.drawTextCentered(g, f, "§8" + L.get("hint.create_home"), width / 2, cy + 16, Theme.FAINT);
+            } else {
+                Theme.drawTextCentered(g, f, "§7🔍  " + L.get("message.no_results") + " \"" + savedSearch + "\"",
+                        width / 2, cy, Theme.DIM);
+            }
         }
 
-        int maxScroll = Math.max(0, filtered.size() - maxVisible);
-        int endIdx    = Math.min(filtered.size(), scrollOffset + maxVisible);
+        // ── Render all widgets (buttons, search box) ──
+        super.render(g, mouseX, mouseY, delta);
 
-        for (int i = scrollOffset; i < endIdx; i++) {
-            String  home  = filtered.get(i);
-            boolean isFav = cfg.isFavorite(home);
-            int     uses  = cfg.getUseCount(home);
-            int     rowY  = listY + (i - scrollOffset) * (UITheme.ROW_H + UITheme.ROW_GAP);
+        // ── Overlays drawn ON TOP of widgets ──────
 
-            boolean hovered = mouseX >= listX && mouseX <= listX + listW
-                           && mouseY >= rowY  && mouseY <= rowY + UITheme.ROW_H;
-            if (hovered) hoveredIndex = i;
+        // Gold left accent on favorite home buttons + use count
+        for (int i = 0; i < homeButtons.size(); i++) {
+            StyledButton btn = homeButtons.get(i);
+            String home = displayedHomes.get(i);
+            boolean isFav = ModConfig.getInstance().isFavorite(home);
+            int uses = ModConfig.getInstance().getUseCount(home);
+            int bx = btn.getX(), by = btn.getY(), bw = btn.getWidth(), bh = btn.getHeight();
 
-            UIRenderer.drawRow(g, listX, rowY, listW, UITheme.ROW_H, hovered, isFav);
-
-            g.drawString(font,
-                    Component.literal(isFav ? "*" : "-"),
-                    listX + 5, rowY + 7,
-                    isFav ? UITheme.COLOR_GOLD : UITheme.TEXT_DISABLED, false);
-
-            String truncated = truncate(home, listW - 60);
-            g.drawString(font, Component.literal(truncated),
-                    listX + 16, rowY + 7,
-                    hovered ? UITheme.TEXT_PRIMARY : 0xFFCCCCEE, false);
-
+            if (isFav) {
+                g.fill(bx, by, bx + 3, by + bh, Theme.GOLD);
+            }
             if (uses > 0) {
-                String useTxt = "x" + uses;
-                g.drawString(font, Component.literal(useTxt),
-                        listX + listW - font.width(useTxt) - 8,
-                        rowY + 7, UITheme.TEXT_DIM, false);
+                String cnt = "×" + uses;
+                g.drawString(f, Component.literal("§8" + cnt),
+                        bx + bw - f.width(cnt) - 5, by + (bh - 8) / 2, Theme.FAINT);
             }
         }
 
-        if (maxScroll > 0) {
-            UIRenderer.drawScrollbar(g,
-                    listX + listW + 2, listY, listH,
-                    scrollOffset, maxScroll);
-        }
-    }
-
-    private void renderFooter(GuiGraphics g, int mouseX, int mouseY) {
-        int footerY = panelY + panelH - UITheme.FOOTER_H;
-        UIRenderer.drawFooter(g, panelX, footerY, panelW, UITheme.FOOTER_H);
-
-        LangManager lang = LangManager.getInstance();
-        String[] labels  = {
-            lang.get("button.refresh"),
-            lang.get("button.recent"),
-            "Stats",
-            lang.get("button.close")
-        };
-        int btnW = (panelW - UITheme.PAD * 2 - 3 * 4) / 4;
-        int btnY = footerY + (UITheme.FOOTER_H - 14) / 2;
-
-        for (int i = 0; i < labels.length; i++) {
-            int bx = panelX + UITheme.PAD + i * (btnW + 4);
-            boolean bh = mouseX >= bx && mouseX <= bx + btnW
-                      && mouseY >= btnY && mouseY <= btnY + 14;
-
-            g.fill(bx, btnY, bx + btnW, btnY + 14,
-                    bh ? UITheme.BTN_BG_HOVER : UITheme.BTN_BG);
-            UIRenderer.drawBorder(g, bx, btnY, btnW, 14,
-                    bh ? UITheme.ACCENT_PRIMARY : UITheme.BTN_BORDER);
-
-            String lbl = labels[i];
-            g.drawString(font, Component.literal(lbl),
-                    bx + btnW / 2 - font.width(lbl) / 2, btnY + 3,
-                    bh ? UITheme.ACCENT_TITLE : UITheme.TEXT_DIM, false);
-        }
-    }
-
-    @Override
-    public boolean mouseClicked(double mx, double my, int btn) {
-        int mouseX = (int) mx;
-        int mouseY = (int) my;
-
-        if (hoveredIndex >= 0 && hoveredIndex < filtered.size()) {
-            String home = filtered.get(hoveredIndex);
-            if (btn == 0) {
-                ModConfig.getInstance().incrementUseCount(home);
-                ModConfig.getInstance().addToHistory(home);
-                HomesManager.getInstance().teleportToHome(home);
-                return true;
-            } else if (btn == 1) {
-                ModConfig.getInstance().toggleFavorite(home);
-                applyFilter();
-                return true;
-            }
-        }
-
-        int sbY     = panelY + UITheme.HEADER_H + 4;
-        int sbW     = panelW - UITheme.PAD * 2 - 24;
-        int favBtnX = listX + sbW + 4;
-        if (btn == 0
-         && mouseX >= favBtnX && mouseX <= favBtnX + 20
-         && mouseY >= sbY - 2  && mouseY <= sbY + 18) {
-            showFavOnly  = !showFavOnly;
-            scrollOffset = 0;
-            applyFilter();
-            return true;
-        }
-
-        int footerY = panelY + panelH - UITheme.FOOTER_H;
-        int btnW    = (panelW - UITheme.PAD * 2 - 3 * 4) / 4;
-        int btnY    = footerY + (UITheme.FOOTER_H - 14) / 2;
-
-        if (btn == 0 && mouseY >= btnY && mouseY <= btnY + 14) {
-            for (int i = 0; i < 4; i++) {
-                int bx = panelX + UITheme.PAD + i * (btnW + 4);
-                if (mouseX >= bx && mouseX <= bx + btnW) {
-                    handleFooterClick(i);
-                    return true;
-                }
-            }
-        }
-
-        return super.mouseClicked(mx, my, btn);
-    }
-
-    private void handleFooterClick(int index) {
-        if (minecraft == null) return;
-        switch (index) {
-            case 0 -> refresh();
-            case 1 -> minecraft.setScreen(new HistoryScreen(this));
-            case 2 -> minecraft.setScreen(new StatsScreen(this));
-            case 3 -> minecraft.setScreen(null);
-        }
-    }
-
-    @Override
-    public boolean mouseScrolled(double mx, double my, double hScroll, double vScroll) {
-        int maxScroll = Math.max(0, filtered.size() - maxVisible);
-        scrollOffset  = Math.max(0, Math.min(maxScroll,
-                scrollOffset - (int) Math.signum(vScroll)));
-        return true;
-    }
-
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == 256) {
-            onClose();
-            return true;
-        }
-        return super.keyPressed(keyCode, scanCode, modifiers);
-    }
-
-    private String truncate(String text, int maxW) {
-        if (font.width(text) <= maxW) return text;
-        while (!text.isEmpty() && font.width(text + "...") > maxW)
-            text = text.substring(0, text.length() - 1);
-        return text + "...";
+        // Separator above bottom buttons
+        int bottomY = 20 + panelH - 24;
+        Theme.drawSeparator(g, panelX + PAD, bottomY - 8, PANEL_W - PAD * 2);
     }
 
     @Override
