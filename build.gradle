@@ -29,6 +29,10 @@ loom {
     }
 }
 
+// ===== WORKAROUND Gradle 9.x =====
+// Crée la configuration si Loom ne l'a pas encore créée
+configurations.maybeCreate('modImplementation').extendsFrom(configurations.getByName('implementation'))
+
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
 
