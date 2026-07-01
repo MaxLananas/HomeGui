@@ -29,11 +29,35 @@ loom {
     }
 }
 
+// ===== Gradle 9.x compatibility =====
+configurations {
+    modImplementation {
+        extendsFrom implementation
+    }
+}
+
+configurations.named('compileClasspath') {
+    extendsFrom configurations.modImplementation
+}
+
+configurations.named('runtimeClasspath') {
+    extendsFrom configurations.modImplementation
+}
+
+// Wire client classpaths too (splitEnvironmentSourceSets)
+configurations.matching { it.name.endsWith('CompileClasspath') }.configureEach {
+    extendsFrom configurations.modImplementation
+}
+
+configurations.matching { it.name.endsWith('RuntimeClasspath') }.configureEach {
+    extendsFrom configurations.modImplementation
+}
+
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
 
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    add('modImplementation', "net.fabricmc:fabric-loader:${project.loader_version}")
+    add('modImplementation', "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}")
 
     implementation 'com.google.code.gson:gson:2.10.1'
 }
