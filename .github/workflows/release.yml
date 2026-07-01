@@ -34,21 +34,20 @@ jobs:
         with:
           gradle-version: "9.5.1"
 
+      - name: Grant execute permission
+        run: chmod +x gradlew
+
       - name: Build
         run: ./gradlew build --parallel --build-cache --configuration-cache --no-daemon
 
       - name: Generate commit log
         id: changelog
         run: |
-          # Dernier tag ou premier commit
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD | head -1)
 
           echo "## 📋 Changes" > notes.md
           echo "" >> notes.md
-
-          # Liste des commits depuis le dernier tag
           git log ${LAST_TAG}..HEAD --pretty=format:"- %s \`%h\`" --no-merges >> notes.md
-
           echo "" >> notes.md
           echo "---" >> notes.md
           echo "" >> notes.md
@@ -68,10 +67,6 @@ jobs:
         run: |
           mkdir -p release
           cp build/libs/*-[0-9]*.jar release/homegui-${{ inputs.version }}.jar
-
-      - name: Get JAR path
-        id: jar
-        run: echo "path=$(ls release/*.jar)" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
