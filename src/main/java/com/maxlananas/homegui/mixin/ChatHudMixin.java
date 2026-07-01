@@ -11,9 +11,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ChatComponent.class)
 public class ChatHudMixin {
 
-    @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;)V",
-            at = @At("HEAD"))
-    private void onAddMessage(Component message, CallbackInfo ci) {
+    @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;)V", at = @At("HEAD"))
+    private void homegui$captureMessage(Component message, CallbackInfo ci) {
         HomesManager.getInstance().onChatMessage(message.getString());
     }
 }
