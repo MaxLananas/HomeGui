@@ -5,6 +5,7 @@ import com.maxlananas.homegui.config.LangManager;
 import com.maxlananas.homegui.config.ModConfig;
 import com.maxlananas.homegui.ui.UIRenderer;
 import com.maxlananas.homegui.ui.UITheme;
+import net.minecraft.client.MouseButtonEvent;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -16,7 +17,6 @@ public class HistoryScreen extends Screen {
     private final Screen parent;
     private int hoveredIndex = -1;
 
-    // Layout
     private int panelX, panelY, panelW, panelH;
     private int listX, listY, listW;
 
@@ -36,6 +36,10 @@ public class HistoryScreen extends Screen {
         listW  = panelW - UITheme.PAD * 2;
     }
 
+    // ─────────────────────────────────────────────────────────────────────
+    // RENDU
+    // ─────────────────────────────────────────────────────────────────────
+
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
         UIRenderer.drawBackground(g, width, height);
@@ -44,7 +48,7 @@ public class HistoryScreen extends Screen {
         // Header
         UIRenderer.drawHeader(g, panelX, panelY, panelW, UITheme.HEADER_H);
         UIRenderer.drawTitle(g, font,
-                "⟳  " + LangManager.getInstance().get("title.history"),
+                "Hist  " + LangManager.getInstance().get("title.history"),
                 panelX + panelW / 2, panelY + 8, UITheme.ACCENT_TITLE);
 
         // Liste
@@ -76,13 +80,12 @@ public class HistoryScreen extends Screen {
                         listX + 4, rowY + 7,
                         UITheme.TEXT_DIM, false);
 
-                // Nom du home
-                g.drawString(font,
-                        Component.literal(entry.homeName),
+                // Nom
+                g.drawString(font, Component.literal(entry.homeName),
                         listX + 20, rowY + 7,
                         hovered ? UITheme.TEXT_PRIMARY : 0xFFCCCCEE, false);
 
-                // Temps écoulé (aligné à droite)
+                // Temps écoulé
                 String ago = entry.getTimeAgo();
                 g.drawString(font, Component.literal(ago),
                         listX + listW - font.width(ago) - 6,
@@ -91,7 +94,6 @@ public class HistoryScreen extends Screen {
             }
         }
 
-        // Footer
         renderFooter(g, mouseX, mouseY);
         super.render(g, mouseX, mouseY, delta);
     }
@@ -100,17 +102,17 @@ public class HistoryScreen extends Screen {
         int footerY = panelY + panelH - UITheme.FOOTER_H;
         UIRenderer.drawFooter(g, panelX, footerY, panelW, UITheme.FOOTER_H);
 
-        LangManager lang  = LangManager.getInstance();
-        String[] labels   = { lang.get("button.clear"), lang.get("button.back") };
-        int btnW          = 70;
-        int totalW        = btnW * 2 + 8;
-        int startX        = panelX + (panelW - totalW) / 2;
-        int btnY          = footerY + (UITheme.FOOTER_H - 14) / 2;
+        LangManager lang = LangManager.getInstance();
+        String[] labels  = { lang.get("button.clear"), lang.get("button.back") };
+        int btnW         = 70;
+        int totalW       = btnW * 2 + 8;
+        int startX       = panelX + (panelW - totalW) / 2;
+        int btnY         = footerY + (UITheme.FOOTER_H - 14) / 2;
 
         for (int i = 0; i < 2; i++) {
-            int bx     = startX + i * (btnW + 8);
-            boolean bh = mouseX >= bx && mouseX <= bx + btnW
-                      && mouseY >= btnY && mouseY <= btnY + 14;
+            int     bx  = startX + i * (btnW + 8);
+            boolean bh  = mouseX >= bx && mouseX <= bx + btnW
+                       && mouseY >= btnY && mouseY <= btnY + 14;
 
             g.fill(bx, btnY, bx + btnW, btnY + 14,
                     bh ? UITheme.BTN_BG_HOVER : UITheme.BTN_BG);
@@ -124,13 +126,20 @@ public class HistoryScreen extends Screen {
         }
     }
 
-    @Override
-    public boolean mouseClicked(double mx, double my, int btn) {
-        int mouseX = (int) mx;
-        int mouseY = (int) my;
+    // ─────────────────────────────────────────────────────────────────────
+    // INPUTS — API 1.21.10
+    // ─────────────────────────────────────────────────────────────────────
 
-        // Clic sur un historique
-        if (hoveredIndex >= 0 && btn == 0) {
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean consumed) {
+        if (consumed) return super.mouseClicked(event, true);
+
+        int mouseX = (int) event.x();
+        int mouseY = (int) event.y();
+        int btn    = event.button();
+
+        // Clic sur un entrée d'historique
+        if (btn == 0 && hoveredIndex >= 0) {
             List<ModConfig.HistoryEntry> history = ModConfig.getInstance().getHistory();
             if (hoveredIndex < history.size()) {
                 String home = history.get(hoveredIndex).homeName;
@@ -141,26 +150,28 @@ public class HistoryScreen extends Screen {
             }
         }
 
-        // Footer
+        // Boutons footer
         int footerY = panelY + panelH - UITheme.FOOTER_H;
         int btnW    = 70;
         int startX  = panelX + (panelW - (btnW * 2 + 8)) / 2;
         int btnY    = footerY + (UITheme.FOOTER_H - 14) / 2;
 
-        for (int i = 0; i < 2; i++) {
-            int bx = startX + i * (btnW + 8);
-            if (mouseX >= bx && mouseX <= bx + btnW
-             && mouseY >= btnY && mouseY <= btnY + 14) {
-                if (i == 0) {
-                    ModConfig.getInstance().clearHistory();
-                } else {
-                    if (minecraft != null) minecraft.setScreen(parent);
-                }
+        if (btn == 0 && mouseY >= btnY && mouseY <= btnY + 14) {
+            // Bouton Clear
+            int bx0 = startX;
+            if (mouseX >= bx0 && mouseX <= bx0 + btnW) {
+                ModConfig.getInstance().clearHistory();
+                return true;
+            }
+            // Bouton Back
+            int bx1 = startX + btnW + 8;
+            if (mouseX >= bx1 && mouseX <= bx1 + btnW) {
+                if (minecraft != null) minecraft.setScreen(parent);
                 return true;
             }
         }
 
-        return super.mouseClicked(mx, my, btn);
+        return super.mouseClicked(event, false);
     }
 
     @Override
