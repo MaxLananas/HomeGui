@@ -24,12 +24,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.5.1"
-
-      - name: Grant execute permission
-        run: chmod +x gradlew
+          cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' }}
 
       - name: Build
-        run: ./gradlew build
+        run: ./gradlew build --parallel --build-cache --configuration-cache --no-daemon
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
