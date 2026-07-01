@@ -66,7 +66,8 @@ jobs:
       - name: Copy JAR
         run: |
           mkdir -p release
-          cp build/libs/*-[0-9]*.jar release/homegui-${{ inputs.version }}.jar
+          cp build/libs/homegui-${{ inputs.version }}.jar release/
+          cp build/libs/homegui-${{ inputs.version }}-sources.jar release/ 2>/dev/null || true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
