@@ -33,8 +33,6 @@ public class HomesManager {
         return instance;
     }
 
-    /* ── Public API ─────────────────────────────── */
-
     public void requestHomes() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
@@ -66,10 +64,7 @@ public class HomesManager {
     public List<String> getHomes()  { return new ArrayList<>(homes); }
     public boolean isWaiting()      { return waiting; }
 
-    /* ── Parsing ────────────────────────────────── */
-
     private boolean parse(String msg) {
-        // 1. Bracket pattern: [home1], [home2]
         Matcher bm = BRACKET.matcher(msg);
         List<String> found = new ArrayList<>();
         while (bm.find()) {
@@ -78,7 +73,6 @@ public class HomesManager {
         }
         if (!found.isEmpty()) { homes.clear(); homes.addAll(found); return true; }
 
-        // 2. Named patterns: "Homes: a, b, c"
         for (Pattern p : NAMED) {
             Matcher m = p.matcher(msg);
             if (m.find()) {
@@ -91,7 +85,6 @@ public class HomesManager {
             }
         }
 
-        // 3. Fallback: line contains "home" with separator
         if (msg.toLowerCase().contains("home")) {
             String[] parts = msg.split("[:,]");
             if (parts.length > 1) {
