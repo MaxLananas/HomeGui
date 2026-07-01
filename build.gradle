@@ -29,11 +29,6 @@ loom {
     }
 }
 
-// Crée la configuration si Loom ne l'a pas encore créée
-configurations.named('compileClasspath').configure {
-    extendsFrom(configurations.getByName('modImplementation'))
-}
-
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
 
