@@ -54,7 +54,6 @@ public class StatsScreen extends Screen {
         Theme.drawTextCentered(g, f, "📊 " + L.get("title.stats"),
                 width / 2, panelY + 10, Theme.ACCENT);
 
-        // ── Stat cards ────────────────────────────
         int y = panelY + 30;
         int cw = (PANEL_W - 48) / 3;
         int ch = 40;
@@ -69,14 +68,11 @@ public class StatsScreen extends Screen {
                 L.get("stats.total_tp"), Theme.SUCCESS);
 
         y += ch + 16;
-
-        // ── Separator + section title ─────────────
         Theme.drawSeparator(g, panelX + 20, y, PANEL_W - 40);
         y += 6;
         Theme.drawTextCentered(g, f, "§8" + L.get("stats.top_homes"), width / 2, y, Theme.DIM);
         y += 14;
 
-        // ── Bar chart ─────────────────────────────
         Map<String, Integer> counts = cfg.getAllUseCounts();
         List<Map.Entry<String, Integer>> sorted = new ArrayList<>(counts.entrySet());
         sorted.sort((a, b) -> b.getValue() - a.getValue());
@@ -89,15 +85,11 @@ public class StatsScreen extends Screen {
             Map.Entry<String, Integer> entry = sorted.get(i);
             int fillW = barW * entry.getValue() / maxVal;
             int barColor = i < 3 ? MEDALS[i] : Theme.ACCENT_DIM;
-
-            // Bar background
+            
             g.fill(barX, y, barX + barW, y + 18, Theme.CARD);
-            // Bar fill
             g.fill(barX, y, barX + fillW, y + 18, (barColor & 0x55FFFFFF) | 0x33000000);
-            // Bottom accent line
             g.fill(barX, y + 16, barX + fillW, y + 18, barColor);
 
-            // Medal / rank
             String medal = switch (i) {
                 case 0 -> "🥇";
                 case 1 -> "🥈";
@@ -106,11 +98,9 @@ public class StatsScreen extends Screen {
             };
             g.drawString(f, Component.literal(medal), barX + 4, y + 5, Theme.TEXT);
 
-            // Name (centered)
             Theme.drawTextCentered(g, f, Theme.truncate(f, entry.getKey(), barW - 80),
                     barX + barW / 2, y + 5, Theme.TEXT);
-
-            // Visit count (right)
+            
             int v = entry.getValue();
             String visits = v + " " + (v > 1 ? L.get("stats.visits_plural") : L.get("stats.visits"));
             g.drawString(f, Component.literal("§8" + visits),
