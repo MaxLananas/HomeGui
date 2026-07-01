@@ -24,17 +24,15 @@ public class HomesScreen extends Screen {
 
     private EditBox searchBox;
     private String savedSearch = "";
-
     private final List<String> allHomes  = new ArrayList<>();
     private final List<String> filtered  = new ArrayList<>();
     private boolean showFavOnly = false;
     private boolean needsRebuild = true;
-
     private int scrollOffset = 0;
     private int visibleRows = 0;
-
     private int listAreaTop = 0;
     private int listAreaBottom = 0;
+    private int panelX = 0;
 
     public HomesScreen() {
         super(Component.literal("HomeGUI"));
@@ -64,22 +62,18 @@ public class HomesScreen extends Screen {
             boolean fav = !showFavOnly || ModConfig.getInstance().isFavorite(h);
             if (match && fav) filtered.add(h);
         }
-        scrollOffset = 0;
     }
 
     private void rebuildUI() {
         clearWidgets();
 
-        int panelX = width / 2 - PANEL_W / 2;
+        panelX = width / 2 - PANEL_W / 2;
         int searchW = PANEL_W - PAD * 2 - 26;
         int searchY = 50;
 
         searchBox = new EditBox(font, panelX + PAD, searchY, searchW, 16, Component.literal("Search"));
         searchBox.setValue(savedSearch);
-        searchBox.setResponder(t -> {
-            savedSearch = t;
-            needsRebuild = true;
-        });
+        searchBox.setResponder(t -> { savedSearch = t; needsRebuild = true; });
         addRenderableWidget(searchBox);
 
         addRenderableWidget(new StyledButton(
@@ -99,6 +93,40 @@ public class HomesScreen extends Screen {
         listAreaTop = searchY + 24;
         listAreaBottom = bottomY - 10;
         visibleRows = Math.max(1, (listAreaBottom - listAreaTop) / ROW_STEP);
+
+        int maxScroll = Math.max(0, filtered.size() - visibleRows);
+        if (scrollOffset > maxScroll) scrollOffset = maxScroll;
+
+        int mainBtnW = PANEL_W - PAD * 2 - 28;
+        int listX = panelX + PAD;
+
+        int start = scrollOffset;
+        int end = Math.min(filtered.size(), scrollOffset + visibleRows);
+
+        for (int i = start; i < end; i++) {
+            final String home = filtered.get(i);
+            int rowY = listAreaTop + (i - scrollOffset) * ROW_STEP;
+            boolean isFav = ModConfig.getInstance().isFavorite(home);
+            int uses = ModConfig.getInstance().getUseCount(home);
+
+            String label = (isFav ? "★ " : "") + home + (uses > 0 ? "  ×" + uses : "");
+
+            addRenderableWidget(new StyledButton(listX, rowY, mainBtnW, ROW_H, label,
+                    () -> {
+                        ModConfig.getInstance().incrementUseCount(home);
+                        ModConfig.getInstance().addToHistory(home);
+                        HomesManager.getInstance().teleportToHome(home);
+                    }));
+
+            addRenderableWidget(new StyledButton(listX + mainBtnW + 4, rowY, 22, ROW_H,
+                    isFav ? "★" : "☆",
+                    () -> { ModConfig.getInstance().toggleFavorite(home); needsRebuild = true; },
+                    isFav ? 0xFF3A2A00 : Theme.BTN,
+                    isFav ? 0xFF5A4A10 : Theme.BTN_HOV,
+                    isFav ? Theme.GOLD : Theme.BORDER,
+                    isFav ? Theme.GOLD : Theme.DIM,
+                    isFav ? Theme.GOLD : Theme.TEXT));
+        }
 
         int bW = 60, gap = 6;
         int total = bW * 4 + gap * 3;
@@ -127,7 +155,6 @@ public class HomesScreen extends Screen {
 
         g.fill(0, 0, width, height, Theme.BG);
 
-        int panelX = width / 2 - PANEL_W / 2;
         int panelY = 20;
         int panelH = height - 50;
 
@@ -140,7 +167,7 @@ public class HomesScreen extends Screen {
 
         if (searchBox != null && searchBox.getValue().isEmpty() && !searchBox.isFocused()) {
             g.drawString(f, Component.literal("§7" + L.get("hint.search")),
-                    searchX(), 54, Theme.FAINT);
+                    panelX + PAD + 4, 54, Theme.FAINT);
         }
 
         if (filtered.isEmpty()) {
@@ -156,152 +183,37 @@ public class HomesScreen extends Screen {
 
         super.render(g, mouseX, mouseY, delta);
 
-        Theme.drawSeparator(g, panelX + PAD, listAreaBottom + 2, PANEL_W - PAD * 2);
-
-        int maxScroll = Math.max(0, filtered.size() - visibleRows);
-        if (scrollOffset > maxScroll) scrollOffset = maxScroll;
-
-        int mainBtnW = PANEL_W - PAD * 2 - 28;
-        int listX = panelX + PAD;
-        int areaW = PANEL_W - PAD * 2;
-
-        boolean anyHovered = false;
-
-        int renderStart = Math.max(0, scrollOffset - 1);
-        int renderEnd = Math.min(filtered.size(), scrollOffset + visibleRows + 1);
-
-        for (int i = renderStart; i < renderEnd; i++) {
-            String home = filtered.get(i);
-            int localIdx = i - scrollOffset;
-            int rowY = listAreaTop + localIdx * ROW_STEP;
-
-            if (rowY + ROW_H < listAreaTop - ROW_H || rowY > listAreaBottom + ROW_H) continue;
-
-            boolean inArea = rowY >= listAreaTop && rowY + ROW_H <= listAreaBottom;
-            boolean hovered = inArea && mouseX >= listX && mouseX <= listX + areaW
-                    && mouseY >= rowY && mouseY <= rowY + ROW_H;
-
-            if (hovered) anyHovered = true;
-
-            boolean isFav = ModConfig.getInstance().isFavorite(home);
-            int uses = ModConfig.getInstance().getUseCount(home);
-
-            int bg = hovered ? Theme.BTN_HOV : Theme.BTN;
-            int borderColor = isFav ? Theme.GOLD : (hovered ? Theme.ACCENT : Theme.BORDER);
-
-            g.fill(listX, rowY, listX + areaW, rowY + ROW_H, bg);
-            Theme.fillBorder(g, listX, rowY, areaW, ROW_H, borderColor);
-
-            if (isFav) {
-                g.fill(listX, rowY, listX + 3, rowY + ROW_H, Theme.GOLD);
-                g.drawString(f, Component.literal("★"), listX + 6, rowY + 7, Theme.GOLD);
-            }
-
-            String displayName = Theme.truncate(f, home, mainBtnW - (isFav ? 24 : 8) - (uses > 0 ? f.width("×" + uses) + 12 : 0));
-            int textX = isFav ? listX + 18 : listX + 6;
-            g.drawString(f, Component.literal(displayName), textX, rowY + 7,
-                    hovered ? 0xFFFFFFFF : Theme.TEXT);
-
-            if (uses > 0) {
-                String cnt = "§8×" + uses;
-                g.drawString(f, Component.literal(cnt),
-                        listX + areaW - f.width(cnt) - 6, rowY + 7, Theme.FAINT);
-            }
-
-            if (isFav) {
-                String starHov = (mouseX >= listX + areaW - 26 && mouseX <= listX + areaW - 4
-                        && mouseY >= rowY + 2 && mouseY <= rowY + ROW_H - 2) ? "★" : "☆";
-                if (!starHov.equals("★")) starHov = "☆";
-                g.drawString(f, Component.literal("§6" + starHov),
-                        listX + areaW - 18, rowY + 7, Theme.GOLD);
-            }
-        }
+        int bottomY = 20 + panelH - 24;
+        Theme.drawSeparator(g, panelX + PAD, bottomY - 10, PANEL_W - PAD * 2);
 
         if (filtered.size() > visibleRows) {
             int sbX = panelX + PANEL_W - PAD + 4;
             int sbH = listAreaBottom - listAreaTop;
             int thumbH = Math.max(20, sbH * visibleRows / filtered.size());
-            int thumbY = listAreaTop + (sbH - thumbH) * scrollOffset / Math.max(1, filtered.size() - visibleRows);
-
+            int maxScroll = Math.max(1, filtered.size() - visibleRows);
+            int thumbY = listAreaTop + (sbH - thumbH) * scrollOffset / maxScroll;
             g.fill(sbX, listAreaTop, sbX + 4, listAreaBottom, Theme.CARD);
             g.fill(sbX, thumbY, sbX + 4, thumbY + thumbH, Theme.ACCENT_DIM);
             Theme.fillBorder(g, sbX, thumbY, 4, thumbH, Theme.ACCENT);
         }
 
-        if (anyHovered && hoveredHome(mouseX, mouseY) != null) {
-            String h = hoveredHome(mouseX, mouseY);
-            boolean isFav = ModConfig.getInstance().isFavorite(h);
-            String tip = L.get("message.click_to_tp") + "  |  " + L.get("message.fav_tip");
-
-            int tw = Math.max(f.width(h), f.width(tip)) + 16;
-            int th = 26;
-            int tx = Math.min(mouseX + 14, width - tw - 4);
-            int ty = Math.max(mouseY - 16, 4);
-
-            g.fill(tx - 4, ty - 4, tx + tw + 4, ty + th + 4, 0xF0100010);
-            Theme.fillBorder(g, tx - 4, ty - 4, tw + 8, th + 8, Theme.ACCENT);
-            g.fill(tx - 4, ty - 4, tx + tw + 8, ty - 3, Theme.ACCENT);
-            g.drawString(f, Component.literal("§b" + h), tx, ty + 2, 0xFFFFFF);
-            g.drawString(f, Component.literal("§7" + tip), tx, ty + 14, 0xAAAAAA);
+        if (filtered.size() > visibleRows) {
+            String hint = "§8↑↓";
+            g.drawString(f, Component.literal(hint),
+                    panelX + PANEL_W - PAD - 10, listAreaBottom + 4, Theme.FAINT);
         }
-    }
-
-    private int searchX() {
-        return width / 2 - PANEL_W / 2 + PAD;
-    }
-
-    private int homeListX() {
-        return width / 2 - PANEL_W / 2 + PAD;
-    }
-
-    private int homeListW() {
-        return PANEL_W - PAD * 2;
-    }
-
-    private String hoveredHome(int mx, int my) {
-        if (mx < homeListX() || mx > homeListX() + homeListW()) return null;
-        if (my < listAreaTop || my > listAreaBottom) return null;
-        int localIdx = (my - listAreaTop) / ROW_STEP;
-        int realIdx = localIdx + scrollOffset;
-        if (realIdx < 0 || realIdx >= filtered.size()) return null;
-        int rowY = listAreaTop + localIdx * ROW_STEP;
-        if (my < rowY || my > rowY + ROW_H) return null;
-        return filtered.get(realIdx);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         if (filtered.size() <= visibleRows) return false;
         int maxScroll = filtered.size() - visibleRows;
-        scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) Math.signum(verticalAmount)));
-        return true;
-    }
-
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        String home = hoveredHome((int) mouseX, (int) mouseY);
-        if (home != null) {
-            int listAreaRight = homeListX() + homeListW();
-            boolean isFav = ModConfig.getInstance().isFavorite(home);
-
-            if (button == 1) {
-                ModConfig.getInstance().toggleFavorite(home);
-                needsRebuild = true;
-                return true;
-            }
-
-            if (isFav && mouseX >= listAreaRight - 26 && mouseX <= listAreaRight - 4) {
-                ModConfig.getInstance().toggleFavorite(home);
-                needsRebuild = true;
-                return true;
-            }
-
-            ModConfig.getInstance().incrementUseCount(home);
-            ModConfig.getInstance().addToHistory(home);
-            HomesManager.getInstance().teleportToHome(home);
-            return true;
+        int newOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) Math.signum(verticalAmount)));
+        if (newOffset != scrollOffset) {
+            scrollOffset = newOffset;
+            needsRebuild = true;
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return true;
     }
 
     @Override
