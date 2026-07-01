@@ -3,15 +3,11 @@ package com.maxlananas.homegui.widget;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.ClickableWidget;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 
-/**
- * A custom-styled button that renders with our dark theme
- * instead of Minecraft's default gray buttons.
- */
-public class StyledButton extends ClickableWidget {
+public class StyledButton extends AbstractWidget {
 
     private final Runnable onPress;
     private final int bgNormal;
@@ -32,7 +28,6 @@ public class StyledButton extends ClickableWidget {
         this.textHover = textHover;
     }
 
-    /** Convenience: standard button with theme defaults. */
     public StyledButton(int x, int y, int w, int h, String label, Runnable onPress) {
         this(x, y, w, h, label, onPress,
              Theme.BTN, Theme.BTN_HOV, Theme.BORDER, Theme.TEXT, 0xFFFFFFFF);
@@ -46,25 +41,25 @@ public class StyledButton extends ClickableWidget {
     @Override
     protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float delta) {
         boolean hov = isHovered();
-        int x = getX(), y = getY(), w = getWidth(), h = getHeight();
+        int bx = getX(), by = getY(), bw = getWidth(), bh = getHeight();
 
         // Background
-        g.fill(x, y, x + w, y + h, hov ? bgHover : bgNormal);
+        g.fill(bx, by, bx + bw, by + bh, hov ? bgHover : bgNormal);
 
-        // Top accent border
-        g.fill(x, y, x + w, y + 1, hov ? borderAccent : Theme.BORDER);
-        // Subtle remaining border
-        g.fill(x, y + h - 1, x + w, y + h, Theme.BORDER);
-        g.fill(x, y, x + 1, y + h, Theme.BORDER);
-        g.fill(x + w - 1, y, x + w, y + h, Theme.BORDER);
+        // Top accent
+        g.fill(bx, by, bx + bw, by + 1, hov ? borderAccent : Theme.BORDER);
+        // Rest of border
+        g.fill(bx, by + bh - 1, bx + bw, by + bh, Theme.BORDER);
+        g.fill(bx, by, bx + 1, by + bh, Theme.BORDER);
+        g.fill(bx + bw - 1, by, bx + bw, by + bh, Theme.BORDER);
 
-        // Text (centered, truncated if needed)
+        // Text
         Font font = Minecraft.getInstance().font;
         String raw = getMessage().getString();
-        String label = Theme.truncate(font, raw, w - 8);
+        String label = Theme.truncate(font, raw, bw - 8);
         int color = hov ? textHover : textNormal;
         g.drawCenteredString(font, Component.literal(label),
-                x + w / 2, y + (h - 8) / 2, color);
+                bx + bw / 2, by + (bh - 8) / 2, color);
     }
 
     @Override
