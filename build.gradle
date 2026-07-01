@@ -29,26 +29,11 @@ loom {
     }
 }
 
-// Gradle 9.x workaround
-configurations.maybeCreate('modImplementation').extendsFrom(configurations.getByName('implementation'))
-
-// FIX: câble modImplementation sur TOUS les classpaths (main + client)
-afterEvaluate {
-    def modImpl = configurations.getByName('modImplementation')
-    ['compileClasspath', 'runtimeClasspath',
-     'clientCompileClasspath', 'clientRuntimeClasspath'].each { name ->
-        def cfg = configurations.findByName(name)
-        if (cfg != null) {
-            cfg.extendsFrom(modImpl)
-        }
-    }
-}
-
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
 
-    add('modImplementation', "net.fabricmc:fabric-loader:${project.loader_version}")
-    add('modImplementation', "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}")
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
     implementation 'com.google.code.gson:gson:2.10.1'
 }
