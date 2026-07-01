@@ -85,32 +85,30 @@ public class StatsScreen extends Screen {
             Map.Entry<String, Integer> entry = sorted.get(i);
             int fillW = barW * entry.getValue() / maxVal;
             int barColor = i < 3 ? MEDALS[i] : Theme.ACCENT_DIM;
-            
+
             g.fill(barX, y, barX + barW, y + 18, Theme.CARD);
             g.fill(barX, y, barX + fillW, y + 18, (barColor & 0x55FFFFFF) | 0x33000000);
             g.fill(barX, y + 16, barX + fillW, y + 18, barColor);
 
             String medal = switch (i) {
-                case 0 -> "🥇";
-                case 1 -> "🥈";
-                case 2 -> "🥉";
+                case 0 -> "\uD83E\uDD47";
+                case 1 -> "\uD83E\uDD48";
+                case 2 -> "\uD83E\uDD49";
                 default -> "#" + (i + 1);
             };
             g.drawString(f, Component.literal(medal), barX + 4, y + 5, Theme.TEXT);
-
             Theme.drawTextCentered(g, f, Theme.truncate(f, entry.getKey(), barW - 80),
                     barX + barW / 2, y + 5, Theme.TEXT);
-            
+
             int v = entry.getValue();
             String visits = v + " " + (v > 1 ? L.get("stats.visits_plural") : L.get("stats.visits"));
             g.drawString(f, Component.literal("§8" + visits),
                     barX + barW - f.width(visits) - 4, y + 5, Theme.DIM);
-
             y += 22;
         }
 
         if (sorted.isEmpty()) {
-            Theme.drawTextCentered(g, f, "§7Aucune donnée disponible", width / 2, y + 10, Theme.DIM);
+            Theme.drawTextCentered(g, f, "§7" + L.get("stats.no_data"), width / 2, y + 10, Theme.DIM);
         }
 
         super.render(g, mouseX, mouseY, delta);
