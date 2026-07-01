@@ -13,6 +13,7 @@ public class ModConfig {
     private static ModConfig instance;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
+    /** Lazy — avoids crash if called before Fabric is ready. */
     private static Path getConfigPath() {
         return FabricLoader.getInstance().getConfigDir().resolve("homegui.json");
     }
@@ -33,16 +34,16 @@ public class ModConfig {
         return instance;
     }
 
-    public String  getLanguage()           { return language; }
-    public void    setLanguage(String l)   { language = l; save(); }
-    public int     getThemeIndex()         { return themeIndex; }
-    public void    setThemeIndex(int idx)  { themeIndex = idx; save(); }
-    public boolean isCompactMode()         { return compactMode; }
-    public void    setCompactMode(boolean c) { compactMode = c; save(); }
+    // ── Getters / Setters ────────────────────────
 
-    public boolean isFavorite(String home) {
-        return favorites.contains(home.toLowerCase());
-    }
+    public String  getLanguage()              { return language; }
+    public void    setLanguage(String l)      { language = l; save(); }
+    public int     getThemeIndex()            { return themeIndex; }
+    public void    setThemeIndex(int i)       { themeIndex = i; save(); }
+    public boolean isCompactMode()            { return compactMode; }
+    public void    setCompactMode(boolean c)  { compactMode = c; save(); }
+
+    public boolean isFavorite(String home)    { return favorites.contains(home.toLowerCase()); }
 
     public boolean toggleFavorite(String home) {
         String k = home.toLowerCase();
@@ -50,18 +51,15 @@ public class ModConfig {
         favorites.add(k); save(); return true;
     }
 
-    public int getUseCount(String home) {
-        return useCounts.getOrDefault(home.toLowerCase(), 0);
-    }
+    public int getUseCount(String home)       { return useCounts.getOrDefault(home.toLowerCase(), 0); }
 
     public void incrementUseCount(String home) {
-        String k = home.toLowerCase();
-        useCounts.merge(k, 1, Integer::sum);
+        useCounts.merge(home.toLowerCase(), 1, Integer::sum);
         totalTeleports++;
         save();
     }
 
-    public int getTotalTeleports()             { return totalTeleports; }
+    public int  getTotalTeleports()            { return totalTeleports; }
     public Map<String,Integer> getAllUseCounts() { return new HashMap<>(useCounts); }
 
     public void addToHistory(String home) {
@@ -71,8 +69,10 @@ public class ModConfig {
         save();
     }
 
-    public List<HistoryEntry> getHistory()  { return new ArrayList<>(history); }
-    public void clearHistory()              { history.clear(); save(); }
+    public List<HistoryEntry> getHistory()    { return new ArrayList<>(history); }
+    public void clearHistory()                { history.clear(); save(); }
+
+    // ── Persistence ──────────────────────────────
 
     private void save() {
         try {
@@ -109,9 +109,7 @@ public class ModConfig {
         Path path = getConfigPath();
         if (!Files.exists(path)) return;
         try {
-            JsonObject json = JsonParser.parseString(
-                    Files.readString(path)).getAsJsonObject();
-
+            JsonObject json = JsonParser.parseString(Files.readString(path)).getAsJsonObject();
             if (json.has("themeIndex"))     themeIndex     = json.get("themeIndex").getAsInt();
             if (json.has("compactMode"))    compactMode    = json.get("compactMode").getAsBoolean();
             if (json.has("language"))       language       = json.get("language").getAsString();
@@ -124,7 +122,7 @@ public class ModConfig {
             if (json.has("useCounts")) {
                 useCounts.clear();
                 json.getAsJsonObject("useCounts").entrySet()
-                    .forEach(e -> useCounts.put(e.getKey(), e.getValue().getAsInt()));
+                        .forEach(e -> useCounts.put(e.getKey(), e.getValue().getAsInt()));
             }
             if (json.has("history")) {
                 history.clear();
@@ -132,51 +130,40 @@ public class ModConfig {
                     try {
                         if (el.isJsonObject()) {
                             JsonObject o = el.getAsJsonObject();
-                            history.add(new HistoryEntry(
-                                    o.get("homeName").getAsString(),
-                                    o.has("timestamp")
-                                        ? o.get("timestamp").getAsLong()
-                                        : System.currentTimeMillis()
-                            ));
+                            history.add(new HistoryEntry(o.get("homeName").getAsString(),
+                                    o.has("timestamp") ? o.get("timestamp").getAsLong() : System.currentTimeMillis()));
                         } else if (el.isJsonPrimitive()) {
-                            history.add(new HistoryEntry(
-                                    el.getAsString(), System.currentTimeMillis()));
+                            history.add(new HistoryEntry(el.getAsString(), System.currentTimeMillis()));
                         }
                     } catch (Exception ignored) {}
                 }
             }
         } catch (Exception e) {
-            System.err.println("[HomeGUI] Lost config, reset. " + e.getMessage());
-            resetToDefaults();
+            System.err.println("[HomeGUI] Config corrupted, resetting. " + e.getMessage());
+            resetDefaults();
         }
     }
 
-    private void resetToDefaults() {
-        themeIndex = 0; compactMode = false; language = "en";
-        totalTeleports = 0;
+    private void resetDefaults() {
+        themeIndex = 0; compactMode = false; language = "en"; totalTeleports = 0;
         favorites.clear(); useCounts.clear(); history.clear();
         try { Files.deleteIfExists(getConfigPath()); } catch (IOException ignored) {}
         save();
     }
 
+    // ── Inner class ──────────────────────────────
+
     public static class HistoryEntry {
         public String homeName;
         public long   timestamp;
 
-        public HistoryEntry() {
-            this.homeName  = "";
-            this.timestamp = System.currentTimeMillis();
-        }
-
-        public HistoryEntry(String homeName, long timestamp) {
-            this.homeName  = homeName;
-            this.timestamp = timestamp;
-        }
+        public HistoryEntry()                           { this("", System.currentTimeMillis()); }
+        public HistoryEntry(String name, long ts)       { this.homeName = name; this.timestamp = ts; }
 
         public String getTimeAgo() {
             long s = (System.currentTimeMillis() - timestamp) / 1000;
-            if (s < 60)    return s + "s";
-            if (s < 3600)  return (s / 60) + "m";
+            if (s < 60)   return s + "s";
+            if (s < 3600) return (s / 60) + "m";
             if (s < 86400) return (s / 3600) + "h";
             return (s / 86400) + "d";
         }
