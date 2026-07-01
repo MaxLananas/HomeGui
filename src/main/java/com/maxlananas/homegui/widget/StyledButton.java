@@ -19,7 +19,7 @@ public class StyledButton extends Button {
                         int borderAccent, int textNormal, int textHover) {
         super(x, y, w, h, Component.literal(label),
               b -> onPress.run(),
-              btn -> btn.getMessage().copy());
+              btn -> btn.get());
         this.bgNormal = bgNormal;
         this.bgHover = bgHover;
         this.borderAccent = borderAccent;
