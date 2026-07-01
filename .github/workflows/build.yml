@@ -26,6 +26,9 @@ jobs:
           gradle-version: "9.5.1"
           cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' }}
 
+      - name: Grant execute permission
+        run: chmod +x gradlew
+
       - name: Build
         run: ./gradlew build --parallel --build-cache --configuration-cache --no-daemon
 
