@@ -12,8 +12,8 @@ import java.util.regex.Pattern;
 public class HomesManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("homegui");
-
     private static HomesManager instance;
+
     private final List<String> homes = new ArrayList<>();
     private boolean isWaitingForResponse = false;
     private long lastRequestTime = 0;
@@ -40,7 +40,7 @@ public class HomesManager {
             isWaitingForResponse = true;
             lastRequestTime = System.currentTimeMillis();
             client.player.connection.sendCommand("homes");
-            LOGGER.info("[HomeGUI] Homes list loading...");
+            LOGGER.info("[HomeGUI] Requesting homes list...");
         }
     }
 
@@ -55,7 +55,7 @@ public class HomesManager {
                 .trim();
         if (parseHomesMessage(clean)) {
             isWaitingForResponse = false;
-            LOGGER.info("[HomeGUI] Homes found: {}", homes);
+            LOGGER.info("[HomeGUI] Homes loaded: {}", homes);
         }
     }
 
@@ -109,8 +109,8 @@ public class HomesManager {
         }
     }
 
-    public List<String> getHomes()     { return new ArrayList<>(homes); }
-    public void addHome(String home)   { if (!homes.contains(home)) homes.add(home); }
-    public void clearHomes()           { homes.clear(); }
-    public boolean isWaiting()         { return isWaitingForResponse; }
+    public List<String> getHomes()   { return new ArrayList<>(homes); }
+    public void addHome(String home) { if (!homes.contains(home)) homes.add(home); }
+    public void clearHomes()         { homes.clear(); }
+    public boolean isWaiting()       { return isWaitingForResponse; }
 }
