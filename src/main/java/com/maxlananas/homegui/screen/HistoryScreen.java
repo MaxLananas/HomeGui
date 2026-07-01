@@ -5,7 +5,6 @@ import com.maxlananas.homegui.config.LangManager;
 import com.maxlananas.homegui.config.ModConfig;
 import com.maxlananas.homegui.ui.UIRenderer;
 import com.maxlananas.homegui.ui.UITheme;
-import net.minecraft.client.MouseButtonEvent;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -36,22 +35,16 @@ public class HistoryScreen extends Screen {
         listW  = panelW - UITheme.PAD * 2;
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // RENDU
-    // ─────────────────────────────────────────────────────────────────────
-
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
         UIRenderer.drawBackground(g, width, height);
         UIRenderer.drawPanel(g, panelX, panelY, panelW, panelH);
 
-        // Header
         UIRenderer.drawHeader(g, panelX, panelY, panelW, UITheme.HEADER_H);
         UIRenderer.drawTitle(g, font,
-                "Hist  " + LangManager.getInstance().get("title.history"),
+                "[ " + LangManager.getInstance().get("title.history") + " ]",
                 panelX + panelW / 2, panelY + 8, UITheme.ACCENT_TITLE);
 
-        // Liste
         List<ModConfig.HistoryEntry> history = ModConfig.getInstance().getHistory();
         hoveredIndex = -1;
 
@@ -71,26 +64,20 @@ public class HistoryScreen extends Screen {
                                && mouseY >= rowY  && mouseY <= rowY + UITheme.ROW_H;
                 if (hovered) hoveredIndex = i;
 
-                UIRenderer.drawRow(g, listX, rowY, listW, UITheme.ROW_H,
-                        hovered, false);
+                UIRenderer.drawRow(g, listX, rowY, listW, UITheme.ROW_H, hovered, false);
 
-                // Numéro
                 String num = (i + 1) + ".";
                 g.drawString(font, Component.literal(num),
-                        listX + 4, rowY + 7,
-                        UITheme.TEXT_DIM, false);
+                        listX + 4, rowY + 7, UITheme.TEXT_DIM, false);
 
-                // Nom
                 g.drawString(font, Component.literal(entry.homeName),
                         listX + 20, rowY + 7,
                         hovered ? UITheme.TEXT_PRIMARY : 0xFFCCCCEE, false);
 
-                // Temps écoulé
                 String ago = entry.getTimeAgo();
                 g.drawString(font, Component.literal(ago),
                         listX + listW - font.width(ago) - 6,
-                        rowY + 7,
-                        UITheme.TEXT_DIM, false);
+                        rowY + 7, UITheme.TEXT_DIM, false);
             }
         }
 
@@ -110,9 +97,9 @@ public class HistoryScreen extends Screen {
         int btnY         = footerY + (UITheme.FOOTER_H - 14) / 2;
 
         for (int i = 0; i < 2; i++) {
-            int     bx  = startX + i * (btnW + 8);
-            boolean bh  = mouseX >= bx && mouseX <= bx + btnW
-                       && mouseY >= btnY && mouseY <= btnY + 14;
+            int     bx = startX + i * (btnW + 8);
+            boolean bh = mouseX >= bx && mouseX <= bx + btnW
+                      && mouseY >= btnY && mouseY <= btnY + 14;
 
             g.fill(bx, btnY, bx + btnW, btnY + 14,
                     bh ? UITheme.BTN_BG_HOVER : UITheme.BTN_BG);
@@ -126,19 +113,11 @@ public class HistoryScreen extends Screen {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // INPUTS — API 1.21.10
-    // ─────────────────────────────────────────────────────────────────────
-
     @Override
-    public boolean mouseClicked(MouseButtonEvent event, boolean consumed) {
-        if (consumed) return super.mouseClicked(event, true);
+    public boolean mouseClicked(double mx, double my, int btn) {
+        int mouseX = (int) mx;
+        int mouseY = (int) my;
 
-        int mouseX = (int) event.x();
-        int mouseY = (int) event.y();
-        int btn    = event.button();
-
-        // Clic sur un entrée d'historique
         if (btn == 0 && hoveredIndex >= 0) {
             List<ModConfig.HistoryEntry> history = ModConfig.getInstance().getHistory();
             if (hoveredIndex < history.size()) {
@@ -150,20 +129,17 @@ public class HistoryScreen extends Screen {
             }
         }
 
-        // Boutons footer
         int footerY = panelY + panelH - UITheme.FOOTER_H;
         int btnW    = 70;
         int startX  = panelX + (panelW - (btnW * 2 + 8)) / 2;
         int btnY    = footerY + (UITheme.FOOTER_H - 14) / 2;
 
         if (btn == 0 && mouseY >= btnY && mouseY <= btnY + 14) {
-            // Bouton Clear
             int bx0 = startX;
             if (mouseX >= bx0 && mouseX <= bx0 + btnW) {
                 ModConfig.getInstance().clearHistory();
                 return true;
             }
-            // Bouton Back
             int bx1 = startX + btnW + 8;
             if (mouseX >= bx1 && mouseX <= bx1 + btnW) {
                 if (minecraft != null) minecraft.setScreen(parent);
@@ -171,7 +147,7 @@ public class HistoryScreen extends Screen {
             }
         }
 
-        return super.mouseClicked(event, false);
+        return super.mouseClicked(mx, my, btn);
     }
 
     @Override
