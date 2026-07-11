@@ -1,5 +1,6 @@
 package com.maxlananas.homegui;
 
+import com.maxlananas.homegui.config.ModConfig;
 import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,10 @@ public class HomesManager {
     private boolean waiting = false;
     private long requestTime = 0;
     private static final long TIMEOUT = 5000L;
+
+    // Matches a "home <name>" teleport command (with or without a leading slash),
+    // but not the "homes" list command (which has no argument).
+    private static final Pattern HOME_CMD = Pattern.compile("(?i)^/?home\\s+(\\S+)");
 
     private static final Pattern BRACKET = Pattern.compile("\\[([^\\]]+)\\]");
     private static final Pattern[] NAMED = {
@@ -49,6 +54,27 @@ public class HomesManager {
             mc.player.connection.sendCommand("home " + name);
             mc.setScreen(null);
         }
+    }
+
+    /**
+     * Called for every command the client sends. Tracks {@code /home <name>}
+     * teleports (typed, macro'd, or triggered by the GUI) exactly once, so
+     * stats and history reflect real usage regardless of how the teleport was
+     * initiated.
+     */
+    public void onCommandSent(String command) {
+        if (command == null) return;
+        Matcher m = HOME_CMD.matcher(command.trim());
+        if (!m.find()) return;
+        String name = m.group(1);
+        // Use the canonical casing from the known homes list when available.
+        for (String h : homes) {
+            if (h.equalsIgnoreCase(name)) { name = h; break; }
+        }
+        ModConfig cfg = ModConfig.getInstance();
+        cfg.incrementUseCount(name);
+        cfg.addToHistory(name);
+        HomeGuiClient.scheduleCoordCapture(name);
     }
 
     public void onChatMessage(String message) {

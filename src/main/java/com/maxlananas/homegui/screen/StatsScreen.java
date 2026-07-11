@@ -44,7 +44,7 @@ public class StatsScreen extends Screen {
         ModConfig cfg = ModConfig.getInstance();
         List<String> homes = HomesManager.getInstance().getHomes();
 
-        g.fill(0, 0, width, height, Theme.BG);
+        g.fill(0, 0, width, height, Theme.backdrop());
 
         int panelX = width / 2 - PANEL_W / 2;
         int panelY = 15;

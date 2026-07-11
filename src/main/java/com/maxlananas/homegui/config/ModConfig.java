@@ -23,6 +23,7 @@ public class ModConfig {
 
     private int     themeIndex     = 0;
     private boolean compactMode    = false;
+    private boolean transparentMenu = false;
     private String  language       = "en";
     private String  sortMode       = "DEFAULT";
     private String  viewMode       = "list";
@@ -46,6 +47,8 @@ public class ModConfig {
     public void    setThemeIndex(int i)       { themeIndex = i; save(); }
     public boolean isCompactMode()            { return compactMode; }
     public void    setCompactMode(boolean c)  { compactMode = c; save(); }
+    public boolean isTransparentMenu()            { return transparentMenu; }
+    public void    setTransparentMenu(boolean t)  { transparentMenu = t; save(); }
     public String  getSortMode()              { return sortMode; }
     public void    setSortMode(String s)      { sortMode = s; save(); }
     public String  getViewMode()              { return viewMode; }
@@ -192,6 +195,7 @@ public class ModConfig {
             JsonObject json = new JsonObject();
             json.addProperty("themeIndex",     themeIndex);
             json.addProperty("compactMode",    compactMode);
+            json.addProperty("transparentMenu", transparentMenu);
             json.addProperty("language",       language);
             json.addProperty("sortMode",       sortMode);
             json.addProperty("viewMode",       viewMode);
@@ -237,6 +241,7 @@ public class ModConfig {
             JsonObject json = JsonParser.parseString(Files.readString(path)).getAsJsonObject();
             if (json.has("themeIndex"))     themeIndex     = json.get("themeIndex").getAsInt();
             if (json.has("compactMode"))    compactMode    = json.get("compactMode").getAsBoolean();
+            if (json.has("transparentMenu")) transparentMenu = json.get("transparentMenu").getAsBoolean();
             if (json.has("language"))       language       = json.get("language").getAsString();
             if (json.has("sortMode"))       sortMode       = json.get("sortMode").getAsString();
             if (json.has("viewMode"))       viewMode       = json.get("viewMode").getAsString();
@@ -280,7 +285,7 @@ public class ModConfig {
     }
 
     private void resetDefaults() {
-        themeIndex = 0; compactMode = false; language = "en";
+        themeIndex = 0; compactMode = false; transparentMenu = false; language = "en";
         sortMode = "DEFAULT"; viewMode = "list"; totalTeleports = 0;
         favorites.clear(); useCounts.clear(); homeCoords.clear(); history.clear();
         try { Files.deleteIfExists(getConfigPath()); } catch (IOException ignored) {}

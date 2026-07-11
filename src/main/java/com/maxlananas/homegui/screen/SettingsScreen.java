@@ -62,6 +62,11 @@ public class SettingsScreen extends Screen {
         addRenderableWidget(new StyledButton(panelX + pad, y, btnW, rowH,
                 L.get("settings.compact") + ": " + (cfg.isCompactMode() ? "ON" : "OFF"),
                 () -> { cfg.setCompactMode(!cfg.isCompactMode()); needsRebuild = true; }));
+        y += rowH + gap;
+
+        addRenderableWidget(new StyledButton(panelX + pad, y, btnW, rowH,
+                L.get("settings.transparent") + ": " + (cfg.isTransparentMenu() ? "ON" : "OFF"),
+                () -> { cfg.setTransparentMenu(!cfg.isTransparentMenu()); needsRebuild = true; }));
         y += rowH + gap + 8;
 
         addRenderableWidget(new StyledButton(panelX + pad, y, btnW / 2 - 4, rowH,
@@ -82,7 +87,7 @@ public class SettingsScreen extends Screen {
         LangManager L = LangManager.getInstance();
         Font f = font;
 
-        g.fill(0, 0, width, height, Theme.BG);
+        g.fill(0, 0, width, height, Theme.backdrop());
 
         int panelX = width / 2 - PANEL_W / 2;
         int panelY = 20;

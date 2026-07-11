@@ -16,7 +16,8 @@ public class LangManager {
         "hint.search", "hint.create_home",
         "settings.language", "settings.sort", "settings.view", "settings.compact",
         "sort.default", "sort.alphabetical", "sort.most_used", "sort.recent", "sort.favorites_first",
-        "view.list", "view.grid"
+        "view.list", "view.grid",
+        "settings.transparent"
     };
 
     private static final Map<String, String[]> LANGS = new HashMap<>();
@@ -33,7 +34,8 @@ public class LangManager {
             "Search…","Use /sethome <name>",
             "Language","Sort","View","Compact",
             "Default","Alphabetical","Most used","Recent","Favorites first",
-            "List","Grid"
+            "List","Grid",
+            "Transparent"
         ));
         LANGS.put("fr", lang(
             "MES HOMES","STATISTIQUES","HISTORIQUE RÉCENT",
@@ -44,7 +46,8 @@ public class LangManager {
             "Rechercher…","Tapez /sethome <nom>",
             "Langue","Tri","Vue","Compact",
             "Défaut","Alphabétique","Plus utilisés","Récents","Favoris d'abord",
-            "Liste","Grille"
+            "Liste","Grille",
+            "Transparent"
         ));
         LANGS.put("es", lang(
             "MIS HOMES","ESTADÍSTICAS","HISTORIAL RECIENTE",
@@ -239,14 +242,12 @@ public class LangManager {
     public String get(String key) {
         String[] translations = LANGS.get(currentCode);
         if (translations == null) translations = LANGS.get("en");
-        for (int i = 0; i < KEYS.length; i++) {
-            if (KEYS[i].equals(key)) {
-                return (i < translations.length) ? translations[i] : key;
-            }
-        }
         String[] en = LANGS.get("en");
         for (int i = 0; i < KEYS.length; i++) {
-            if (KEYS[i].equals(key)) return (i < en.length) ? en[i] : key;
+            if (KEYS[i].equals(key)) {
+                if (i < translations.length) return translations[i];
+                return (i < en.length) ? en[i] : key;   // fall back to English, not the raw key
+            }
         }
         return key;
     }

@@ -1,5 +1,6 @@
 package com.maxlananas.homegui.widget;
 
+import com.maxlananas.homegui.config.ModConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -7,6 +8,10 @@ import net.minecraft.network.chat.Component;
 
 public final class Theme {
     private Theme() {}
+
+    // Alpha multipliers applied to structural fills when transparent menu mode is on.
+    private static final float PANEL_ALPHA    = 0.62f;
+    private static final float BACKDROP_ALPHA = 0.20f;
 
     public static final int BG          = 0xFF080816;
     public static final int PANEL       = 0xFF0E0E24;
@@ -31,7 +36,29 @@ public final class Theme {
     public static final int BTN         = 0xFF161638;
     public static final int BTN_HOV     = 0xFF222255;
 
+    private static boolean transparent() {
+        return ModConfig.getInstance().isTransparentMenu();
+    }
+
+    /** Multiplies the alpha channel of an ARGB color by {@code mult} (clamped to 0-255). */
+    public static int withAlpha(int argb, float mult) {
+        int a = Math.round(((argb >>> 24) & 0xFF) * mult);
+        a = Math.max(0, Math.min(255, a));
+        return (a << 24) | (argb & 0x00FFFFFF);
+    }
+
+    /** Structural fill color (panels, cards, buttons, borders), dimmed in transparent mode. */
+    public static int bg(int argb) {
+        return transparent() ? withAlpha(argb, PANEL_ALPHA) : argb;
+    }
+
+    /** Full-screen backdrop color, strongly dimmed in transparent mode so the world shows through. */
+    public static int backdrop() {
+        return transparent() ? withAlpha(BG, BACKDROP_ALPHA) : BG;
+    }
+
     public static void fillBorder(GuiGraphics g, int x, int y, int w, int h, int c) {
+        c = bg(c);
         g.fill(x, y, x + w, y + 1, c);
         g.fill(x, y + h - 1, x + w, y + h, c);
         g.fill(x, y, x + 1, y + h, c);
@@ -39,20 +66,20 @@ public final class Theme {
     }
 
     public static void drawPanel(GuiGraphics g, int x, int y, int w, int h) {
-        g.fill(x - 2, y - 2, x + w + 2, y + h + 2, ACCENT_GLOW);
-        g.fill(x, y, x + w, y + h, PANEL);
+        g.fill(x - 2, y - 2, x + w + 2, y + h + 2, bg(ACCENT_GLOW));
+        g.fill(x, y, x + w, y + h, bg(PANEL));
         fillBorder(g, x, y, w, h, BORDER);
-        g.fill(x + 1, y, x + w - 1, y + 2, ACCENT);
+        g.fill(x + 1, y, x + w - 1, y + 2, bg(ACCENT));
     }
 
     public static void drawCard(GuiGraphics g, int x, int y, int w, int h, int accentColor) {
-        g.fill(x, y, x + w, y + h, CARD);
-        g.fill(x, y, x + w, y + 2, accentColor);
+        g.fill(x, y, x + w, y + h, bg(CARD));
+        g.fill(x, y, x + w, y + 2, bg(accentColor));
         fillBorder(g, x, y, w, h, BORDER);
     }
 
     public static void drawSeparator(GuiGraphics g, int x, int y, int w) {
-        g.fill(x, y, x + w, y + 1, BORDER);
+        g.fill(x, y, x + w, y + 1, bg(BORDER));
     }
 
     public static void drawTextCentered(GuiGraphics g, Font font, String text, int cx, int y, int color) {

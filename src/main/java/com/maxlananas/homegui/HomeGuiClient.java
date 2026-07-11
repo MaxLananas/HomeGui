@@ -57,4 +57,9 @@ public class HomeGuiClient implements ClientModInitializer {
         pendingCoordHome = homeName;
         coordCaptureCountdown = 20;
     }
+
+    /** True if the given key event matches the (possibly rebound) "open GUI" keybind. */
+    public static boolean matchesOpenKey(net.minecraft.client.input.KeyEvent event) {
+        return openGuiKey != null && openGuiKey.matches(event);
+    }
 }

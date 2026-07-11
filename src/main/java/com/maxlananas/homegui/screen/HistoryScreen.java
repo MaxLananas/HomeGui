@@ -95,7 +95,7 @@ public class HistoryScreen extends Screen {
         LangManager L = LangManager.getInstance();
         Font f = font;
 
-        g.fill(0, 0, width, height, Theme.BG);
+        g.fill(0, 0, width, height, Theme.backdrop());
 
         int panelY = 20;
         int panelH = height - 50;

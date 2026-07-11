@@ -23,18 +23,13 @@ public enum SortMode {
         return DEFAULT;
     }
 
-    public List<String> apply(List<String> homes) {
-        return switch (this) {
-            case ALPHABETICAL -> {
-                var sorted = new java.util.ArrayList<>(homes);
-                sorted.sort(String::compareToIgnoreCase);
-                yield sorted;
-            }
+    /** Sorts {@code homes} in place according to this mode. */
+    public void apply(List<String> homes) {
+        switch (this) {
+            case ALPHABETICAL -> homes.sort(String::compareToIgnoreCase);
             case MOST_USED -> {
                 var cfg = ModConfig.getInstance();
-                var sorted = new java.util.ArrayList<>(homes);
-                sorted.sort((a, b) -> Integer.compare(cfg.getUseCount(b), cfg.getUseCount(a)));
-                yield sorted;
+                homes.sort((a, b) -> Integer.compare(cfg.getUseCount(b), cfg.getUseCount(a)));
             }
             case RECENT -> {
                 var cfg = ModConfig.getInstance();
@@ -43,20 +38,19 @@ public enum SortMode {
                 var sorted = new java.util.ArrayList<String>();
                 for (var n : recentNames) homes.stream().filter(h -> h.equalsIgnoreCase(n)).forEach(sorted::add);
                 homes.stream().filter(h -> !sorted.contains(h)).forEach(sorted::add);
-                yield sorted;
+                homes.clear();
+                homes.addAll(sorted);
             }
             case FAVORITES_FIRST -> {
                 var cfg = ModConfig.getInstance();
-                var sorted = new java.util.ArrayList<>(homes);
-                sorted.sort((a, b) -> {
+                homes.sort((a, b) -> {
                     int fa = cfg.isFavorite(a) ? 0 : 1;
                     int fb = cfg.isFavorite(b) ? 0 : 1;
                     if (fa != fb) return fa - fb;
                     return a.compareToIgnoreCase(b);
                 });
-                yield sorted;
             }
-            default -> homes;
-        };
+            default -> { }
+        }
     }
 }
