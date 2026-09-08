@@ -113,19 +113,6 @@ public final class ModConfig {
         save();
     }
 
-    @Deprecated(forRemoval = false)
-    public void incrementUseCount(String home) { recordTeleport(home, System.currentTimeMillis()); }
-
-    @Deprecated(forRemoval = false)
-    public void addToHistory(String home) {
-        var valid = HomeNames.validate(home);
-        if (valid.isEmpty()) return;
-        history.removeIf(entry -> entry.homeName.equalsIgnoreCase(valid.get()));
-        history.add(0, new HistoryEntry(valid.get(), System.currentTimeMillis()));
-        trimHistory();
-        save();
-    }
-
     public Map<String, Integer> getAllUseCounts() { return Map.copyOf(useCounts); }
 
     public void setHomeCoords(String name, int x, int y, int z) {

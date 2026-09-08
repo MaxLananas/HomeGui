@@ -52,6 +52,7 @@ jobs:
         run: ./scripts/validate-artifacts.sh
 
       - name: Create draft GitHub release
+        id: draft
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -60,6 +61,7 @@ jobs:
             --title "HomeGui $VERSION" --notes-file CHANGELOG.md
 
       - name: Publish to Modrinth
+        id: modrinth
         env:
           MODRINTH_API_KEY: ${{ secrets.MODRINTH_API_KEY }}
         run: ./gradlew publishMods --no-daemon --stacktrace
@@ -68,3 +70,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release edit "v$VERSION" --draft=false --latest
+
+      - name: Remove unpublished draft after a failed upload
+        if: failure() && steps.draft.outcome == 'success' && steps.modrinth.outcome != 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release delete "v$VERSION" --cleanup-tag --yes
