@@ -29,15 +29,21 @@ jobs:
           set -o pipefail
           ./gradlew check build --no-daemon --stacktrace 2>&1 | tee build.log
       - run: ./scripts/validate-artifacts.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: homegui-${{ github.sha }}
           path: build/libs/homegui-fabric-*.jar
           if-no-files-found: error
           retention-days: 14
+      - name: Report failure
+        if: failure()
+        run: |
+          echo '```text' >> "$GITHUB_STEP_SUMMARY"
+          tail -n 300 build.log >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
       - name: Upload failure log
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: build-log-${{ github.sha }}
           path: build.log
