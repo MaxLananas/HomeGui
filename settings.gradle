@@ -11,4 +11,13 @@ plugins {
 }
 
 rootProject.name = "HomeGui"
+
+// Loader independent code. Everything in here is covered by plain JUnit tests.
 include("core")
+include("ui")
+
+// One module per published artifact. Sources for a Minecraft generation are shared
+// by adding ../mc-<generation>/src/main/java to the module's source set, so Fabric
+// and NeoForge of the same generation compile the same interface code.
+include("fabric-1.21.11")
+project(":fabric-1.21.11").projectDir = file("artifacts/fabric-1.21.11")

@@ -14,9 +14,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
+  # The loader independent modules carry the parsing, validation, storage and
+  # interface logic, so their tests run first and on their own: a Minecraft build
+  # problem must never hide a core regression.
+  core:
+    name: Core and interface tests
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
@@ -24,15 +28,49 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v5
-      - name: Build and test
+      - name: Run JUnit tests
+        run: ./gradlew :core:check :ui:check --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: test-reports
+          path: |
+            core/build/reports/tests
+            ui/build/reports/tests
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # One job per published artifact, grouped by API generation so that a whole
+  # generation can be dropped or added by editing a single matrix entry.
+  artifacts:
+    name: ${{ matrix.artifact }}
+    needs: core
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - artifact: fabric-1.21.11
+            module: fabric-1.21.11
+            java: '21'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Build
         run: |
           set -o pipefail
-          ./gradlew check build --no-daemon --stacktrace 2>&1 | tee build.log
-      - run: ./scripts/validate-artifacts.sh
+          ./gradlew :${{ matrix.module }}:build --no-daemon --stacktrace 2>&1 | tee build.log
+      - name: Validate the artifact
+        run: ./scripts/validate-artifacts.sh ${{ matrix.module }}
       - uses: actions/upload-artifact@v5
         with:
-          name: homegui-${{ github.sha }}
-          path: build/libs/homegui-fabric-*.jar
+          name: ${{ matrix.artifact }}
+          path: artifacts/${{ matrix.module }}/build/libs/*.jar
           if-no-files-found: error
           retention-days: 14
       - name: Report failure
@@ -41,16 +79,8 @@ jobs:
           echo '```text' >> "$GITHUB_STEP_SUMMARY"
           tail -n 300 build.log >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          message=$(grep -E -A8 -B2 '(^.*error:|FAILURE:|What went wrong:|Execution failed for task)' build.log | tail -c 30000 || true)
+          message=$(grep -E -A8 -B2 '(error:|FAILURE:|What went wrong:|Execution failed for task)' build.log | tail -c 30000 || true)
           message=${message//'%'/'%25'}
           message=${message//$'\r'/'%0D'}
           message=${message//$'\n'/'%0A'}
           echo "::error title=Gradle failure::$message"
-      - name: Upload failure log
-        if: failure()
-        uses: actions/upload-artifact@v5
-        with:
-          name: build-log-${{ github.sha }}
-          path: build.log
-          if-no-files-found: ignore
-          retention-days: 3

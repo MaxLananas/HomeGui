@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.maxlananas.homegui.mc.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "HomeGuiChatMixin",
+    "HomeGuiCommandMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

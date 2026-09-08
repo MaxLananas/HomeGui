@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "homegui",
+  "version": "${mod_version}",
+  "name": "HomeGui",
+  "description": "A safe, fast client-side interface for server homes.",
+  "authors": ["MaxLananas"],
+  "contact": {
+    "homepage": "https://modrinth.com/mod/homegui",
+    "sources": "https://github.com/MaxLananas/HomeGui",
+    "issues": "https://github.com/MaxLananas/HomeGui/issues"
+  },
+  "license": "CC-BY-NC-4.0",
+  "icon": "assets/homegui/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.maxlananas.homegui.fabric.HomeGuiFabricClient"]
+  },
+  "mixins": ["homegui.mixins.json"],
+  "depends": {
+    "fabricloader": ">=${loader}",
+    "minecraft": "${minecraft}",
+    "java": ">=${java}",
+    "fabric-api": "*"
+  }
+}
