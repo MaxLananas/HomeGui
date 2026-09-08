@@ -1,40 +1,36 @@
 plugins {
     id 'fabric-loom' version "${loom_version}"
     id 'java'
+    id 'me.modmuss50.mod-publish-plugin' version '2.2.0'
 }
 
 version = project.mod_version
-group   = project.maven_group
+group = project.maven_group
 
-base {
-    archivesName = project.archives_base_name
-}
+base { archivesName = project.archives_base_name }
 
-repositories {
-    mavenCentral()
-}
+sourceSets.main.java.srcDir("core/src/main/java")
+
+repositories { mavenCentral() }
 
 dependencies {
-    minecraft          "com.mojang:minecraft:${minecraft_version}"
-    mappings            loom.officialMojangMappings()
-    modImplementation  "net.fabricmc:fabric-loader:${loader_version}"
-    modImplementation  "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
-    implementation     'com.google.code.gson:gson:2.10.1'
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
 }
 
 processResources {
-    inputs.property "version", project.version
-    filteringCharset "UTF-8"
+    inputs.properties(version: project.version, minecraft: minecraft_version, loader: loader_version)
+    filteringCharset = "UTF-8"
     filesMatching("fabric.mod.json") {
-        expand "version": project.version
+        expand(version: project.version, minecraft: minecraft_version, loader: loader_version)
     }
 }
 
-def targetJavaVersion = 21
-
 tasks.withType(JavaCompile).configureEach {
-    it.options.encoding = "UTF-8"
-    it.options.release  = targetJavaVersion
+    options.encoding = "UTF-8"
+    options.release = 21
 }
 
 java {
@@ -44,7 +40,21 @@ java {
 }
 
 jar {
-    from("LICENSE") {
-        rename { "${it}_${project.archives_base_name}" }
+    from("LICENSE") { rename { "LICENSE_homegui" } }
+}
+
+publishMods {
+    file = remapJar.archiveFile
+    changelog = providers.fileContents(layout.projectDirectory.file("CHANGELOG.md")).asText
+    type = STABLE
+    modLoaders.add("fabric")
+    displayName = "HomeGui ${project.version} (Fabric ${minecraft_version})"
+    version = project.version
+
+    modrinth {
+        accessToken = providers.environmentVariable("MODRINTH_API_KEY")
+        projectId = providers.gradleProperty("modrinth_project_id")
+        minecraftVersions.add(minecraft_version)
+        requires("fabric-api")
     }
 }

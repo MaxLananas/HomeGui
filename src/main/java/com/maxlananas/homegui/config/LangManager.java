@@ -20,7 +20,7 @@ public class LangManager {
         "settings.transparent"
     };
 
-    private static final Map<String, String[]> LANGS = new HashMap<>();
+    private static final Map<String, String[]> LANGS = new LinkedHashMap<>();
 
     private static String[] lang(String... v) { return v; }
 

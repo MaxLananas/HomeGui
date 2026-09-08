@@ -71,11 +71,7 @@ public class HistoryScreen extends Screen {
             String label = (i + 1) + ". " + entry.homeName;
 
             addRenderableWidget(new StyledButton(listX, rowY, listW, ROW_H, label,
-                    () -> {
-                        ModConfig.getInstance().incrementUseCount(entry.homeName);
-                        ModConfig.getInstance().addToHistory(entry.homeName);
-                        HomesManager.getInstance().teleportToHome(entry.homeName);
-                    }));
+                    () -> HomesManager.getInstance().teleportToHome(entry.homeName)));
         }
 
         int bW = 90;

@@ -42,6 +42,7 @@ public class HomesScreen extends Screen {
     private int listAreaTop = 0;
     private int listAreaBottom = 0;
     private int panelX = 0;
+    private long observedRevision = -1;
 
     public HomesScreen() {
         super(Component.literal("HomeGUI"));
@@ -50,14 +51,24 @@ public class HomesScreen extends Screen {
     @Override
     protected void init() {
         if (searchBox != null) savedSearch = searchBox.getValue();
-        allHomes.clear();
-        allHomes.addAll(HomesManager.getInstance().getHomes());
+        syncHomes();
         needsRebuild = true;
     }
 
     @Override
     public void tick() {
+        if (observedRevision != HomesManager.getInstance().getRevision()) {
+            syncHomes();
+            needsRebuild = true;
+        }
         if (needsRebuild) { needsRebuild = false; rebuildUI(); }
+    }
+
+    private void syncHomes() {
+        HomesManager manager = HomesManager.getInstance();
+        allHomes.clear();
+        allHomes.addAll(manager.getHomes());
+        observedRevision = manager.getRevision();
     }
 
     private void applyFilter() {
