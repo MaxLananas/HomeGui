@@ -67,3 +67,52 @@ java {
 jar {
     from("${rootDir}/LICENSE") { rename { "LICENSE_homegui" } }
 }
+
+// ---------------------------------------------------------------------------
+// Porting aid. Minecraft's client API moves between generations, and guessing a
+// signature costs a whole CI round trip. This prints the mapped API of the named
+// classes, and can list the classes whose name matches a pattern, so a new
+// generation is ported against what is actually there.
+//
+//   ./gradlew :fabric-1.21.11:apiProbe -PprobeClasses=net.minecraft.client.gui.screens.Screen
+//   ./gradlew :fabric-1.21.11:apiProbe -PprobeMatch='.*Event\.class'
+// ---------------------------------------------------------------------------
+tasks.register("apiProbe") {
+    description = "Dumps the mapped Minecraft API so a new generation can be ported without guessing."
+    def wanted = (project.findProperty("probeClasses") ?: "").toString()
+            .split(",").collect { it.trim() }.findAll { it }
+    def match = (project.findProperty("probeMatch") ?: "").toString()
+    def classpath = sourceSets.main.compileClasspath
+    inputs.files(classpath)
+    doLast {
+        def cp = classpath.files.collect { it.absolutePath }.join(File.pathSeparator)
+
+        if (match) {
+            def found = new TreeSet<String>()
+            classpath.files.findAll { it.name.endsWith(".jar") }.each { jar ->
+                def zip = new java.util.zip.ZipFile(jar)
+                try {
+                    zip.entries().each { entry ->
+                        def name = entry.name
+                        if (name.endsWith(".class") && name ==~ match) found.add(name)
+                    }
+                } finally {
+                    zip.close()
+                }
+            }
+            def listing = found.join("\n")
+            println listing
+            println "::notice title=classes matching ${match}::" +
+                    listing.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A").take(4000)
+        }
+
+        wanted.each { className ->
+            def process = ["javap", "-protected", "-classpath", cp, className].execute()
+            process.waitFor()
+            def body = (process.text ?: "").readLines().findAll { it.trim() }.join("\n")
+            println "===== ${className}\n${body}"
+            println "::notice title=${className}::" +
+                    body.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A").take(4000)
+        }
+    }
+}
