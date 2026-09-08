@@ -20,12 +20,16 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
 }
 
+def metadata = [
+        version: version.toString(),
+        minecraft: minecraft_version.toString(),
+        loader: loader_version.toString()
+]
+
 processResources {
-    inputs.properties(version: project.version, minecraft: minecraft_version, loader: loader_version)
+    inputs.properties(metadata)
     filteringCharset = "UTF-8"
-    filesMatching("fabric.mod.json") {
-        expand(version: project.version, minecraft: minecraft_version, loader: loader_version)
-    }
+    filesMatching("fabric.mod.json") { expand(metadata) }
 }
 
 tasks.withType(JavaCompile).configureEach {
