@@ -41,6 +41,11 @@ jobs:
           echo '```text' >> "$GITHUB_STEP_SUMMARY"
           tail -n 300 build.log >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
+          message=$(grep -E -A8 -B2 '(^.*error:|FAILURE:|What went wrong:|Execution failed for task)' build.log | tail -c 30000 || true)
+          message=${message//'%'/'%25'}
+          message=${message//$'\r'/'%0D'}
+          message=${message//$'\n'/'%0A'}
+          echo "::error title=Gradle failure::$message"
       - name: Upload failure log
         if: failure()
         uses: actions/upload-artifact@v5
