@@ -57,10 +57,11 @@ tasks.withType(JavaCompile).configureEach {
     options.release = javaVersion
 }
 
+// No sources or javadoc JAR: the release artifact is the single JAR a player
+// installs, and the loader independent code is readable in the repository.
 java {
     sourceCompatibility = JavaVersion.toVersion(javaVersion)
     targetCompatibility = JavaVersion.toVersion(javaVersion)
-    withSourcesJar()
 }
 
 jar {

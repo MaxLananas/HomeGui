@@ -110,10 +110,16 @@ class LocalizationTest {
     }
 
     @Test
-    void cyclingReturnsToAuto() {
+    void cyclingWalksEveryLocaleAndWrapsBackToAuto() {
         text.setLanguage(Localization.AUTO);
-        for (int i = 0; i < Localization.SUPPORTED.size() + 1; i++) text.cycle();
-        assertEquals(Localization.AUTO, text.requestedLanguage());
+        java.util.List<String> seen = new java.util.ArrayList<>();
+        for (int i = 0; i < Localization.SUPPORTED.size() + 1; i++) {
+            seen.add(text.cycle());
+        }
+        assertEquals(Localization.AUTO, seen.get(Localization.SUPPORTED.size()),
+                "the cycle wraps back to auto after the last locale");
+        assertEquals(new java.util.HashSet<>(Localization.SUPPORTED),
+                new java.util.HashSet<>(seen.subList(0, Localization.SUPPORTED.size())));
     }
 
     @Test
