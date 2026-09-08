@@ -37,8 +37,8 @@ permissions:
 env:
   PROBE_MODULE: ${{ inputs.module || 'fabric-1.21.11' }}
   PROBE_JAVA: ${{ inputs.java || '21' }}
-  PROBE_CLASSES: ${{ inputs.classes || 'net.minecraft.client.gui.screens.Screen,net.minecraft.client.gui.components.events.ContainerEventHandler,net.minecraft.client.gui.components.AbstractWidget,net.minecraft.client.GameNarrator' }}
-  PROBE_MATCH: ${{ inputs.match || 'net/minecraft/client/[a-z/]*Event\.class' }}
+  PROBE_CLASSES: ${{ inputs.classes || 'net.minecraft.client.gui.screens.Screen,net.minecraft.client.input.KeyEvent,net.minecraft.client.input.CharacterEvent,net.minecraft.client.input.MouseButtonEvent,net.minecraft.client.gui.components.events.GuiEventListener,net.minecraft.client.KeyMapping' }}
+  PROBE_MATCH: ${{ inputs.match || '' }}
 
 jobs:
   probe:
