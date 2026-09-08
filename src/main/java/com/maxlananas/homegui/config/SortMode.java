@@ -32,14 +32,13 @@ public enum SortMode {
                 homes.sort((a, b) -> Integer.compare(cfg.getUseCount(b), cfg.getUseCount(a)));
             }
             case RECENT -> {
-                var cfg = ModConfig.getInstance();
-                var recentNames = new java.util.LinkedHashSet<String>();
-                for (var e : cfg.getHistory()) recentNames.add(e.homeName.toLowerCase());
-                var sorted = new java.util.ArrayList<String>();
-                for (var n : recentNames) homes.stream().filter(h -> h.equalsIgnoreCase(n)).forEach(sorted::add);
-                homes.stream().filter(h -> !sorted.contains(h)).forEach(sorted::add);
-                homes.clear();
-                homes.addAll(sorted);
+                var rank = new java.util.HashMap<String, Integer>();
+                int index = 0;
+                for (var entry : ModConfig.getInstance().getHistory()) {
+                    rank.putIfAbsent(com.maxlananas.homegui.core.HomeNames.key(entry.homeName), index++);
+                }
+                homes.sort(java.util.Comparator.comparingInt(
+                        home -> rank.getOrDefault(com.maxlananas.homegui.core.HomeNames.key(home), Integer.MAX_VALUE)));
             }
             case FAVORITES_FIRST -> {
                 var cfg = ModConfig.getInstance();

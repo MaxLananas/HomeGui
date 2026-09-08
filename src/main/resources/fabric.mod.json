@@ -2,13 +2,15 @@
   "schemaVersion": 1,
   "id": "homegui",
   "version": "${version}",
-  "name": "HomeGUI",
-  "description": "GUI to manage your homes",
+  "name": "HomeGui",
+  "description": "A safe, fast client-side interface for server homes.",
   "authors": ["MaxLananas"],
   "contact": {
-    "sources": "https://github.com/MaxLananas/HomeGui"
+    "homepage": "https://modrinth.com/mod/homegui",
+    "sources": "https://github.com/MaxLananas/HomeGui",
+    "issues": "https://github.com/MaxLananas/HomeGui/issues"
   },
-  "license": "MIT",
+  "license": "CC-BY-NC-4.0",
   "icon": "assets/homegui/icon.png",
   "environment": "client",
   "entrypoints": {
@@ -16,9 +18,9 @@
   },
   "mixins": ["homegui.mixins.json"],
   "depends": {
-    "fabricloader": ">=0.19.3",
-    "minecraft":    "~1.21.10",
-    "java":         ">=21",
-    "fabric-api":   "*"
+    "fabricloader": ">=${loader}",
+    "minecraft": "${minecraft}",
+    "java": ">=21",
+    "fabric-api": "*"
   }
 }

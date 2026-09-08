@@ -2,39 +2,55 @@ name: Build
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [main]
   pull_request:
-    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Java 21
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
+          distribution: temurin
           java-version: '21'
-          distribution: 'temurin'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "9.5.1"
-          cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' }}
-
-      - name: Grant execute permission
-        run: chmod +x gradlew
-
-      - name: Build
-        run: ./gradlew build --parallel --build-cache --no-daemon
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Build and test
+        run: |
+          set -o pipefail
+          ./gradlew check build --no-daemon --stacktrace 2>&1 | tee build.log
+      - run: ./scripts/validate-artifacts.sh
+      - uses: actions/upload-artifact@v5
         with:
           name: homegui-${{ github.sha }}
-          path: build/libs/*-[0-9]*.jar
+          path: build/libs/homegui-fabric-*.jar
           if-no-files-found: error
+          retention-days: 14
+      - name: Report failure
+        if: failure()
+        run: |
+          echo '```text' >> "$GITHUB_STEP_SUMMARY"
+          tail -n 300 build.log >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          message=$(grep -E -A8 -B2 '(^.*error:|FAILURE:|What went wrong:|Execution failed for task)' build.log | tail -c 30000 || true)
+          message=${message//'%'/'%25'}
+          message=${message//$'\r'/'%0D'}
+          message=${message//$'\n'/'%0A'}
+          echo "::error title=Gradle failure::$message"
+      - name: Upload failure log
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: build-log-${{ github.sha }}
+          path: build.log
+          if-no-files-found: ignore
+          retention-days: 3
