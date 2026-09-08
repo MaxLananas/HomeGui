@@ -14,10 +14,6 @@ cd "$(dirname "$0")/.."
 
 SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/null}"
 
-if [ -x scripts/report-test-failures.sh ]; then
-    ./scripts/report-test-failures.sh || true
-fi
-
 {
     echo
     echo '### Gradle output'

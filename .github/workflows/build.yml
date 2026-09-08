@@ -32,6 +32,9 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew :core:check :ui:check --no-daemon --stacktrace 2>&1 | tee build.log
+      - name: Test results
+        if: always()
+        run: ./scripts/report-test-failures.sh
       - name: Report the failure
         if: failure()
         run: ./.github/report-failure.sh build.log

@@ -37,10 +37,14 @@ for path in sorted(glob.glob("*/build/test-results/test/*.xml")):
                 case.get("classname"), case.get("name"), body,
                 "\n".join("    " + line.strip() for line in stack)))
 
-print("Tests: %(tests)d, failures: %(failures)d, errors: %(errors)d, skipped: %(skipped)d" % totals)
+summary_line = "Tests: %(tests)d, failures: %(failures)d, errors: %(errors)d, skipped: %(skipped)d" % totals
+print(summary_line)
+# A notice on every run, so the number of tests actually executed is visible without
+# downloading the log. A count that silently drops is a regression of its own.
+print("::notice title=JUnit::" + summary_line)
 
 if not failures:
-    print("No test failure was recorded; the build failed earlier than the tests.")
+    print("No test failure was recorded.")
     sys.exit(0)
 
 with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
