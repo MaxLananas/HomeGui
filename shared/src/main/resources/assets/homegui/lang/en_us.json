@@ -79,6 +79,7 @@
   "homegui.message.imported": "Imported %d entries",
   "homegui.message.import_missing": "No export file found",
   "homegui.message.import_failed": "Import failed",
+  "homegui.message.save_failed": "Could not save your settings",
   "homegui.message.teleporting": "Teleporting to %s",
   "homegui.message.rejected": "That name was rejected",
   "homegui.message.favourite_added": "%s added to favourites",

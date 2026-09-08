@@ -79,6 +79,7 @@
   "homegui.message.imported": "Zaimportowano %d wpisów",
   "homegui.message.import_missing": "Nie znaleziono pliku eksportu",
   "homegui.message.import_failed": "Import nie powiódł się",
+  "homegui.message.save_failed": "Nie uda\\u0142o si\\u0119 zapisa\\u0107 ustawie\\u0144",
   "homegui.message.teleporting": "Teleportowanie do %s",
   "homegui.message.rejected": "Ta nazwa została odrzucona",
   "homegui.message.favourite_added": "Dodano %s do ulubionych",

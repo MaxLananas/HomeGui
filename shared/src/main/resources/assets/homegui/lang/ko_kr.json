@@ -79,6 +79,7 @@
   "homegui.message.imported": "%d개 항목을 가져왔습니다",
   "homegui.message.import_missing": "내보내기 파일이 없습니다",
   "homegui.message.import_failed": "가져오기 실패",
+  "homegui.message.save_failed": "\\uc124\\uc815\\uc744 \\uc800\\uc7a5\\ud560 \\uc218 \\uc5c6\\uc2b5\\ub2c8\\ub2e4",
   "homegui.message.teleporting": "%s(으)로 텔레포트 중",
   "homegui.message.rejected": "해당 이름은 거부되었습니다",
   "homegui.message.favourite_added": "%s 을(를) 즐겨찾기에 추가",

@@ -79,6 +79,7 @@
   "homegui.message.imported": "%d kayıt içe aktarıldı",
   "homegui.message.import_missing": "Dışa aktarma dosyası bulunamadı",
   "homegui.message.import_failed": "İçe aktarma başarısız",
+  "homegui.message.save_failed": "Ayarlar kaydedilemedi",
   "homegui.message.teleporting": "%s konumuna ışınlanılıyor",
   "homegui.message.rejected": "Bu ad reddedildi",
   "homegui.message.favourite_added": "%s favorilere eklendi",

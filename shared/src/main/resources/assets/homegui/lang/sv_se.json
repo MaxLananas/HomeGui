@@ -79,6 +79,7 @@
   "homegui.message.imported": "%d poster importerade",
   "homegui.message.import_missing": "Ingen exportfil hittades",
   "homegui.message.import_failed": "Importen misslyckades",
+  "homegui.message.save_failed": "Kunde inte spara dina inst\\u00e4llningar",
   "homegui.message.teleporting": "Teleporterar till %s",
   "homegui.message.rejected": "Det namnet avvisades",
   "homegui.message.favourite_added": "%s lades till i favoriter",

@@ -121,6 +121,9 @@ public final class HomeGuiUi {
     private long lastStateChange;
     private RequestState lastState = RequestState.IDLE;
 
+    /** Last storage failure the user has already been told about, so it is not repeated. */
+    private long reportedWriteFailure;
+
     public HomeGuiUi(ConfigStore config, HomesController homes, UiHost host, Localization text) {
         this.config = config;
         this.homes = homes;
@@ -598,6 +601,7 @@ public final class HomeGuiUi {
 
     /** Called once per client tick. */
     public void tick() {
+        checkPersistence();
         RequestState state = homes.request().state();
         if (state != lastState) {
             lastState = state;
@@ -618,6 +622,7 @@ public final class HomeGuiUi {
      */
     public boolean activate(String id) {
         boolean handled = doActivate(id);
+        checkPersistence();
         if (handled) layout();
         return handled;
     }
@@ -1477,6 +1482,20 @@ public final class HomeGuiUi {
             painter.border(x, y, w, h, Theme.surface(palette.accent, seeThrough));
             painter.text(toast.message, x + 8, y + 3, palette.text, true);
             index++;
+        }
+    }
+
+    /**
+     * Surfaces a storage failure the moment it happens. Settings, favourites and
+     * history all write through the same store, so a full or read-only disk would
+     * otherwise lose changes without any sign of it.
+     */
+    private void checkPersistence() {
+        long failure = config.lastWriteFailure();
+        if (failure != 0L && failure != reportedWriteFailure) {
+            reportedWriteFailure = failure;
+            notify(text.get("homegui.message.save_failed"));
+            host.announce(text.get("homegui.message.save_failed"));
         }
     }
 

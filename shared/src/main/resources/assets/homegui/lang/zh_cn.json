@@ -79,6 +79,7 @@
   "homegui.message.imported": "已导入 %d 条记录",
   "homegui.message.import_missing": "未找到导出文件",
   "homegui.message.import_failed": "导入失败",
+  "homegui.message.save_failed": "\\u65e0\\u6cd5\\u4fdd\\u5b58\\u4f60\\u7684\\u8bbe\\u7f6e",
   "homegui.message.teleporting": "正在传送到 %s",
   "homegui.message.rejected": "该名称被拒绝",
   "homegui.message.favourite_added": "已将 %s 加入收藏",

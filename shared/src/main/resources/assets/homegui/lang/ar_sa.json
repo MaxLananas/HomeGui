@@ -79,6 +79,7 @@
   "homegui.message.imported": "تم استيراد %d عنصر",
   "homegui.message.import_missing": "لم يتم العثور على ملف التصدير",
   "homegui.message.import_failed": "فشل الاستيراد",
+  "homegui.message.save_failed": "\\u062a\\u0639\\u0630\\u0651\\u0631 \\u062d\\u0641\\u0638 \\u0625\\u0639\\u062f\\u0627\\u062f\\u0627\\u062a\\u0643",
   "homegui.message.teleporting": "جارٍ الانتقال إلى %s",
   "homegui.message.rejected": "تم رفض هذا الاسم",
   "homegui.message.favourite_added": "تمت إضافة %s إلى المفضلة",

@@ -79,6 +79,7 @@
   "homegui.message.imported": "%d entrées importées",
   "homegui.message.import_missing": "Aucun fichier d'export trouvé",
   "homegui.message.import_failed": "Échec de l'import",
+  "homegui.message.save_failed": "Impossible d'enregistrer vos param\\u00e8tres",
   "homegui.message.teleporting": "Téléportation vers %s",
   "homegui.message.rejected": "Ce nom a été refusé",
   "homegui.message.favourite_added": "%s ajouté aux favoris",

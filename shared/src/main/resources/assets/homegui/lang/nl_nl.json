@@ -79,6 +79,7 @@
   "homegui.message.imported": "%d items geïmporteerd",
   "homegui.message.import_missing": "Geen exportbestand gevonden",
   "homegui.message.import_failed": "Importeren mislukt",
+  "homegui.message.save_failed": "Instellingen konden niet worden opgeslagen",
   "homegui.message.teleporting": "Teleporteren naar %s",
   "homegui.message.rejected": "Die naam is geweigerd",
   "homegui.message.favourite_added": "%s toegevoegd aan favorieten",

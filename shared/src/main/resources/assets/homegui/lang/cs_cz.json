@@ -79,6 +79,7 @@
   "homegui.message.imported": "Importováno %d položek",
   "homegui.message.import_missing": "Exportní soubor nenalezen",
   "homegui.message.import_failed": "Import se nezdařil",
+  "homegui.message.save_failed": "Nastaven\\u00ed se nepoda\\u0159ilo ulo\\u017eit",
   "homegui.message.teleporting": "Teleportace na %s",
   "homegui.message.rejected": "Tento název byl odmítnut",
   "homegui.message.favourite_added": "%s přidáno do oblíbených",

@@ -79,6 +79,7 @@
   "homegui.message.imported": "%d voci importate",
   "homegui.message.import_missing": "Nessun file di esportazione trovato",
   "homegui.message.import_failed": "Importazione non riuscita",
+  "homegui.message.save_failed": "Impossibile salvare le impostazioni",
   "homegui.message.teleporting": "Teletrasporto a %s",
   "homegui.message.rejected": "Quel nome è stato rifiutato",
   "homegui.message.favourite_added": "%s aggiunto ai preferiti",

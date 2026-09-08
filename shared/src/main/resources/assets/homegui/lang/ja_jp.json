@@ -79,6 +79,7 @@
   "homegui.message.imported": "%d 件を読み込みました",
   "homegui.message.import_missing": "書き出しファイルが見つかりません",
   "homegui.message.import_failed": "読み込みに失敗しました",
+  "homegui.message.save_failed": "\\u8a2d\\u5b9a\\u3092\\u4fdd\\u5b58\\u3067\\u304d\\u307e\\u305b\\u3093\\u3067\\u3057\\u305f",
   "homegui.message.teleporting": "%s へテレポート中",
   "homegui.message.rejected": "その名前は拒否されました",
   "homegui.message.favourite_added": "%s をお気に入りに追加",
