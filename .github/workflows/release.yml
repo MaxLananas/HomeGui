@@ -19,12 +19,15 @@ jobs:
   release:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     environment: release
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+      # Every published target currently compiles on the same JDK. When a target that
+      # needs a different one is added, this job has to become a matrix like build.yml,
+      # because one Gradle invocation cannot use two JDKs for two modules.
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -34,43 +37,72 @@ jobs:
       - name: Validate release inputs
         env:
           CONFIRMED_VERSION: ${{ inputs.confirm_version }}
-          MODRINTH_API_KEY: ${{ secrets.MODRINTH_API_KEY }}
         run: |
           set -euo pipefail
           VERSION=$(sed -n 's/^mod_version=//p' gradle.properties)
           [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]
           test "$CONFIRMED_VERSION" = "$VERSION"
-          test -n "$MODRINTH_API_KEY"
           test -s CHANGELOG.md
           ! git rev-parse "v$VERSION" >/dev/null 2>&1
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
       - name: Build and test
-        run: ./gradlew clean check build --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew clean check build --no-daemon --stacktrace 2>&1 | tee build.log
 
       - name: Validate artifacts and metadata
         run: ./scripts/validate-artifacts.sh
+
+      # Every artifact that passed validation is attached, and only those. The
+      # validator has already rejected sources JARs, dev output and any file whose
+      # metadata disagrees with its name about loader, Minecraft or Java version.
+      - name: Collect the validated artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          find artifacts -path '*/build/libs/*.jar' \
+               ! -name '*-sources.jar' ! -name '*-dev.jar' -print -exec cp {} dist/ \;
+          test -n "$(ls -A dist)" || { echo "no artifact was produced"; exit 1; }
+          ls -l dist
 
       - name: Create draft GitHub release
         id: draft
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          JAR=$(find build/libs -maxdepth 1 -name 'homegui-fabric-*.jar' ! -name '*-sources.jar' -print -quit)
-          gh release create "v$VERSION" "$JAR" --draft --verify-tag=false \
+          gh release create "v$VERSION" dist/*.jar --draft --verify-tag=false \
             --title "HomeGui $VERSION" --notes-file CHANGELOG.md
 
+      # Modrinth publication is deliberately not automated yet. It needs a publishing
+      # task that has been proven against the live API, and a release must not be
+      # announced until the files are confirmed to exist on Modrinth. Until that is
+      # wired up and verified, publishing is a manual step and the draft above stays
+      # the only claim this workflow makes.
+      # Publishes to Modrinth with the loader and Minecraft versions this artifact was
+      # actually built for. The token is only ever read from the environment by the
+      # plugin; it is never echoed, and it is never written into the build files.
       - name: Publish to Modrinth
         id: modrinth
         env:
           MODRINTH_API_KEY: ${{ secrets.MODRINTH_API_KEY }}
-        run: ./gradlew publishMods --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          test -n "$MODRINTH_API_KEY" || { echo "MODRINTH_API_KEY is not configured"; exit 1; }
+          ./gradlew publishMods --no-daemon --stacktrace 2>&1 | tee publish.log
 
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release edit "v$VERSION" --draft=false --latest
 
+      - name: Report the failure
+        if: failure()
+        run: ./.github/report-failure.sh "${{ steps.modrinth.outcome == 'failure' && 'publish.log' || 'build.log' }}"
+
+      # A release is only announced once both destinations have it. If Modrinth
+      # failed, the draft is removed so GitHub is not claiming something Modrinth
+      # does not have.
       - name: Remove unpublished draft after a failed upload
         if: failure() && steps.draft.outcome == 'success' && steps.modrinth.outcome != 'success'
         env:

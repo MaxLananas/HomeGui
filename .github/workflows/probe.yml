@@ -1,0 +1,71 @@
+# Prints the mapped Minecraft API of an artifact module. Minecraft's client API moves
+# between generations; this is how a new target is ported against the real signatures
+# instead of a guess that only a compiler can disprove.
+#
+# The pull_request trigger exists only so the probe can run from a branch: GitHub
+# refuses to dispatch a workflow that is not on the default branch yet. It is scoped
+# to changes of this file and of the artifact build scripts, so it does not run on
+# ordinary pull requests.
+name: API probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      module:
+        description: "Artifact module"
+        required: true
+        default: "fabric-1.21.11"
+      classes:
+        description: "Comma separated class names to javap (empty to skip)"
+        required: false
+        default: ""
+      match:
+        description: "Regex over jar entry names to list (empty to skip)"
+        required: false
+        default: ""
+      filter:
+        description: "Keep only javap lines matching this regex (empty for everything)"
+        required: false
+        default: ""
+      java:
+        description: "JDK for the module"
+        required: true
+        default: "21"
+  pull_request:
+    paths:
+      - '.github/workflows/probe.yml'
+      - 'artifacts/*/build.gradle'
+
+permissions:
+  contents: read
+
+env:
+  PROBE_MODULE: ${{ inputs.module || 'fabric-1.21.11' }}
+  PROBE_JAVA: ${{ inputs.java || '21' }}
+  PROBE_CLASSES: ${{ inputs.classes || 'net.minecraft.client.Minecraft,net.minecraft.resources.ResourceKey,net.minecraft.client.resources.LanguageManager' }}
+  PROBE_MATCH: ${{ inputs.match || '' }}
+  # One workflow annotation is the only part of a CI log readable without downloading
+  # it, and Minecraft is far too big for one, so the dump is narrowed by default.
+  PROBE_FILTER: ${{ inputs.filter || 'getCurrentServer|[Rr]ealm|[Ll]anguage|getConnection|isSingleplayer|getNarrator|identifier|location|Code|getSelected|class ' }}
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.PROBE_JAVA }}
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Probe
+        run: |
+          set -o pipefail
+          ./gradlew ":$PROBE_MODULE:apiProbe" \
+            -PprobeClasses="$PROBE_CLASSES" -PprobeMatch="$PROBE_MATCH" \
+            -PprobeFilter="$PROBE_FILTER" \
+            --no-daemon 2>&1 | tee probe.log
+      - name: Report the failure
+        if: failure()
+        run: ./.github/report-failure.sh probe.log
