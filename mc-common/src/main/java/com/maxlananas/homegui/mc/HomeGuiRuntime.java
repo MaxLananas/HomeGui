@@ -171,7 +171,8 @@ public final class HomeGuiRuntime implements UiHost {
      */
     private static String clientLocale() {
         try {
-            return Minecraft.getInstance().getLanguageManager().getSelected().getCode();
+            // getSelected() hands back the locale code itself in this generation.
+            return Minecraft.getInstance().getLanguageManager().getSelected();
         } catch (Throwable ignored) {
             return "en_us";
         }

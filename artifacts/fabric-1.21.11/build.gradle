@@ -85,6 +85,9 @@ tasks.register("apiProbe") {
     def wanted = (project.findProperty("probeClasses") ?: "").toString()
             .split(",").collect { it.trim() }.findAll { it }
     def match = (project.findProperty("probeMatch") ?: "").toString()
+    // A class like Minecraft is far too big for one annotation, so its dump can be
+    // narrowed to the methods actually being ported.
+    def filter = (project.findProperty("probeFilter") ?: "").toString()
     def classpath = sourceSets.main.compileClasspath
     inputs.files(classpath)
     doLast {
@@ -112,7 +115,9 @@ tasks.register("apiProbe") {
         wanted.each { className ->
             def process = ["javap", "-protected", "-classpath", cp, className].execute()
             process.waitFor()
-            def body = (process.text ?: "").readLines().findAll { it.trim() }.join("\n")
+            def lines = (process.text ?: "").readLines().findAll { it.trim() }
+            if (filter) lines = lines.findAll { it ==~ ".*(${filter}).*" }
+            def body = lines.join("\n")
             println "===== ${className}\n${body}"
             println "::notice title=${className}::" +
                     body.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A").take(MAX_NOTICE)
