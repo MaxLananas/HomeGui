@@ -1,6 +1,10 @@
 # Prints the mapped Minecraft API of an artifact module. Minecraft's client API moves
 # between generations; this is how a new target is ported against the real signatures
 # instead of a guess that only a compiler can disprove.
+#
+# The pull_request trigger exists only so the probe can run from a branch: GitHub
+# refuses to dispatch a workflow that is not on the default branch yet. It is scoped
+# to changes of this file, so it does not run on ordinary pull requests.
 name: API probe
 
 on:
@@ -22,9 +26,19 @@ on:
         description: "JDK for the module"
         required: true
         default: "21"
+  pull_request:
+    paths:
+      - '.github/workflows/probe.yml'
+      - 'artifacts/*/build.gradle'
 
 permissions:
   contents: read
+
+env:
+  PROBE_MODULE: ${{ inputs.module || 'fabric-1.21.11' }}
+  PROBE_JAVA: ${{ inputs.java || '21' }}
+  PROBE_CLASSES: ${{ inputs.classes || 'net.minecraft.client.gui.screens.Screen,net.minecraft.client.gui.components.events.ContainerEventHandler,net.minecraft.client.gui.components.AbstractWidget,net.minecraft.client.GameNarrator' }}
+  PROBE_MATCH: ${{ inputs.match || 'net/minecraft/client/[a-z/]*Event\.class' }}
 
 jobs:
   probe:
@@ -35,13 +49,13 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: ${{ inputs.java }}
+          java-version: ${{ env.PROBE_JAVA }}
       - uses: gradle/actions/setup-gradle@v5
       - name: Probe
         run: |
           set -o pipefail
-          ./gradlew :${{ inputs.module }}:apiProbe \
-            -PprobeClasses="${{ inputs.classes }}" -PprobeMatch="${{ inputs.match }}" \
+          ./gradlew ":$PROBE_MODULE:apiProbe" \
+            -PprobeClasses="$PROBE_CLASSES" -PprobeMatch="$PROBE_MATCH" \
             --no-daemon 2>&1 | tee probe.log
       - name: Report the failure
         if: failure()
