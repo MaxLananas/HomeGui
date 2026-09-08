@@ -22,7 +22,7 @@ unverified, it has not been observed in a running client.
   pack can override any string, and every locale carries all 87 keys.
 - **Icons are drawn, not typed.** The fragile Unicode glyphs (including a surrogate
   pair medal) are replaced by 19 procedural 9×9 bitmaps rendered as fills.
-- **Artifact naming.** Release files are now `homegui-<version>-<loader>-<minecraft>.jar`,
+- **Artifact naming.** Release files are now `homegui-{version}-{loader}-{minecraft}.jar`,
   for example `homegui-4.1.0-fabric-1.21.11.jar`.
 - **No sources JAR is produced.** The release artifact is the single file a player
   installs.
