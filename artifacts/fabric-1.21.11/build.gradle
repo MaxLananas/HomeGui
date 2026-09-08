@@ -79,6 +79,9 @@ jar {
 // ---------------------------------------------------------------------------
 tasks.register("apiProbe") {
     description = "Dumps the mapped Minecraft API so a new generation can be ported without guessing."
+    // One workflow annotation is the only part of a CI log that can be read back
+    // without downloading it, so a whole class has to fit in one.
+    def MAX_NOTICE = 60_000
     def wanted = (project.findProperty("probeClasses") ?: "").toString()
             .split(",").collect { it.trim() }.findAll { it }
     def match = (project.findProperty("probeMatch") ?: "").toString()
@@ -102,8 +105,8 @@ tasks.register("apiProbe") {
             }
             def listing = found.join("\n")
             println listing
-            println "::notice title=classes matching ${match}::" +
-                    listing.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A").take(4000)
+            println "::notice title=classes matching ${match} (${found.size()})::" +
+                    listing.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A").take(MAX_NOTICE)
         }
 
         wanted.each { className ->
@@ -112,7 +115,7 @@ tasks.register("apiProbe") {
             def body = (process.text ?: "").readLines().findAll { it.trim() }.join("\n")
             println "===== ${className}\n${body}"
             println "::notice title=${className}::" +
-                    body.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A").take(4000)
+                    body.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A").take(MAX_NOTICE)
         }
     }
 }
