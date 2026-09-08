@@ -22,7 +22,10 @@ public final class HomeNames {
 
     private static final Pattern SAFE =
             Pattern.compile("[\\p{L}\\p{N}][\\p{L}\\p{N}_.:@+\\-]{0," + (MAX_LENGTH - 1) + "}");
-    private static final Pattern EDGE = Pattern.compile("^[\\p{Z}\\p{C}]+|[\\p{Z}\\p{C}]+$");
+    /** Only surrounding whitespace is trimmed: a control character anywhere in a name
+     *  means the value is not a name, and silently dropping it would accept a different
+     *  home than the one that was typed. */
+    private static final Pattern EDGE = Pattern.compile("^[\\p{Z}\\s]+|[\\p{Z}\\s]+$");
 
     private HomeNames() {}
 

@@ -295,14 +295,25 @@ public final class ConfigStore {
         save();
     }
 
+    /** History for the current server, with pre server-scoped entries filling the gaps. */
     public List<HistoryEntry> history() {
-        List<HistoryEntry> entries = new ArrayList<>(current().history);
+        Map<String, HistoryEntry> merged = new LinkedHashMap<>();
+        ServerData fallback = legacy();
+        if (fallback != null) {
+            for (HistoryEntry entry : fallback.history) merged.put(HomeNames.key(entry.homeName), entry);
+        }
+        for (HistoryEntry entry : current().history) merged.put(HomeNames.key(entry.homeName), entry);
+        List<HistoryEntry> entries = new ArrayList<>(merged.values());
         entries.sort((a, b) -> Long.compare(b.timestamp, a.timestamp));
+        trim(entries);
         return Collections.unmodifiableList(entries);
     }
 
+    /** Clears what {@link #history()} shows, legacy entries included. */
     public void clearHistory() {
         current().history.clear();
+        ServerData fallback = legacy();
+        if (fallback != null) fallback.history.clear();
         save();
     }
 

@@ -40,7 +40,8 @@ class IconsTest {
         Icons.paint(one, Icons.STAR, 0, 0, 1, 0xFFFFFFFF);
         RecordingPainter two = new RecordingPainter();
         Icons.paint(two, Icons.STAR, 0, 0, 2, 0xFFFFFFFF);
-        assertEquals(one.fills * 4, two.fills);
+        assertEquals(one.area() * 4, two.area(), "each lit pixel covers four times the area");
+        assertEquals(two.rects.get(0)[2], 2);
     }
 
     @Test

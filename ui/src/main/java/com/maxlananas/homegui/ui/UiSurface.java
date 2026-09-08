@@ -75,13 +75,6 @@ public final class UiSurface {
         return null;
     }
 
-    public UiElement lastFocusable() {
-        for (int i = elements.size() - 1; i >= 0; i--) {
-            if (elements.get(i).isFocusable()) return elements.get(i);
-        }
-        return null;
-    }
-
     /**
      * Moves focus by {@code direction} positions, skipping disabled elements and
      * wrapping around. Returns the newly focused element, or null when there is
@@ -110,31 +103,5 @@ public final class UiSurface {
                 : Math.floorMod(current + direction, focusable.size());
         focusedId = focusable.get(next).id;
         return focusable.get(next);
-    }
-
-    /**
-     * Moves focus to the next element with the same list index offset, used for arrow
-     * keys inside the home list and the history list.
-     */
-    public UiElement moveFocusAmong(String rolePrefix, int direction) {
-        List<UiElement> group = new ArrayList<>();
-        for (UiElement element : elements) {
-            if (element.isFocusable() && element.id.startsWith(rolePrefix)) group.add(element);
-        }
-        if (group.isEmpty()) return null;
-        int current = -1;
-        if (focusedId != null) {
-            for (int i = 0; i < group.size(); i++) {
-                if (group.get(i).id.equals(focusedId)) {
-                    current = i;
-                    break;
-                }
-            }
-        }
-        int next = current < 0
-                ? (direction > 0 ? 0 : group.size() - 1)
-                : Math.max(0, Math.min(group.size() - 1, current + direction));
-        focusedId = group.get(next).id;
-        return group.get(next);
     }
 }

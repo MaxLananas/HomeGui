@@ -151,7 +151,9 @@ public final class HomeListParser {
         }
         if (sawBracket) return homes;
 
-        for (String candidate : text.split("(?:\\s*[,|;]\\s*|\\s+)", -1)) {
+        // Punctuation only. Splitting on whitespace as well would turn a sentence that
+        // happens to follow a heading into a list of one word homes.
+        for (String candidate : text.split("\\s*[,|;]\\s*", -1)) {
             add(homes, candidate);
         }
         return homes;
@@ -171,7 +173,9 @@ public final class HomeListParser {
         Matcher paren = WORLD_PAREN.matcher(rest);
         Matcher colon = WORLD_COLON.matcher(rest);
         Matcher pipe = WORLD_PIPE.matcher(rest);
-        if (paren.lookingAt()) {
+        // A parenthesised number is EssentialsX's home count ("Homes (3): ..."), not a
+        // world name, so it must not turn the heading into an entry called "Homes".
+        if (paren.lookingAt() && !isNumber(paren.group(1))) {
             world = paren.group(1);
             rest = rest.substring(paren.end());
         } else if (colon.lookingAt() && !isNumber(colon.group(1))) {

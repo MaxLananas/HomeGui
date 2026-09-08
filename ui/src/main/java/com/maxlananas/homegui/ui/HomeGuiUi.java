@@ -570,6 +570,45 @@ public final class HomeGuiUi {
         if (historyList) historyScroll = clamp(0, historyScroll, Math.max(0, total - rows));
     }
 
+    /**
+     * Moves the list focus by whole rows. Only the rows inside the window exist as
+     * elements, so the next index is worked out from the list itself and the layout is
+     * rebuilt when the target has scrolled into view; otherwise the last visible row
+     * would be the end of the list however long it is.
+     */
+    private void moveListFocus(String prefix, int direction, int total, boolean homes) {
+        if (total <= 0) return;
+        int current = focusIndex(prefix, total);
+        int next = clamp(0, current + direction, total - 1);
+        if (homes) {
+            ensureVisible(next);
+        } else {
+            ensureHistoryVisible(next);
+        }
+        layout();
+        surface.setFocusedId(prefix + next);
+        host.invalidate();
+        host.announce(narrationFor(prefix + next));
+    }
+
+    /** List index behind a {@code home.N} or {@code history.N} element id. */
+    private int focusIndex(String prefix, int total) {
+        String focused = surface.focusedId();
+        if (focused != null && focused.startsWith(prefix)) {
+            try {
+                return clamp(0, Integer.parseInt(focused.substring(prefix.length())), total - 1);
+            } catch (NumberFormatException ignored) {
+                // fall through to the first row in the window
+            }
+        }
+        return firstVisibleIndex();
+    }
+
+    /** Index of the first row currently inside the window. */
+    private int firstVisibleIndex() {
+        return tab == Tab.HISTORY ? historyScroll : scroll;
+    }
+
     /** Scrolls so that a list index is inside the visible window. */
     public void ensureVisible(int index) {
         if (index < scroll) {
@@ -866,35 +905,17 @@ public final class HomeGuiUi {
         if (key == Keys.DOWN || key == Keys.UP) {
             int direction = key == Keys.DOWN ? 1 : -1;
             if (inHomes) {
-                UiElement next = surface.moveFocusAmong("home.", direction);
-                if (next != null) {
-                    ensureVisible(next.index);
-                    surface.setFocusedId(next.id);
-                    host.invalidate();
-                    host.announce(next.narration());
-                }
+                moveListFocus("home.", direction, visible.size(), true);
                 return true;
             }
             if (inHistory) {
-                UiElement next = surface.moveFocusAmong("history.", direction);
-                if (next != null) {
-                    ensureHistoryVisible(next.index);
-                    surface.setFocusedId(next.id);
-                    host.invalidate();
-                    host.announce(next.narration());
-                }
+                moveListFocus("history.", direction, config.history().size(), false);
                 return true;
             }
         }
         if (key == Keys.RIGHT || key == Keys.LEFT) {
             if (config.preferences().viewMode() == Preferences.ViewMode.GRID && inHomes) {
-                int direction = key == Keys.RIGHT ? 1 : -1;
-                UiElement next = surface.moveFocusAmong("home.", direction);
-                if (next != null) {
-                    ensureVisible(next.index);
-                    surface.setFocusedId(next.id);
-                    host.invalidate();
-                }
+                moveListFocus("home.", key == Keys.RIGHT ? 1 : -1, visible.size(), true);
                 return true;
             }
             if (surface.focusedId() != null && surface.focusedId().startsWith("tab.")) {
@@ -922,7 +943,7 @@ public final class HomeGuiUi {
                 + search.substring(Math.min(caret, search.length()));
         caret = Math.min(caret + 1, search.length());
         scroll = 0;
-        host.invalidate();
+        refreshAfterEdit();
         return true;
     }
 
@@ -962,8 +983,17 @@ public final class HomeGuiUi {
                 break;
         }
         scroll = 0;
-        host.invalidate();
+        refreshAfterEdit();
         return true;
+    }
+
+    /**
+     * Re-runs the filter and the layout after the search text changed, so the model is
+     * consistent immediately rather than only once the bridge happens to rebuild.
+     */
+    private void refreshAfterEdit() {
+        host.invalidate();
+        layout();
     }
 
     private void paste() {

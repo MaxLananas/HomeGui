@@ -20,22 +20,29 @@ public final class ServerKey {
 
     private ServerKey() {}
 
+    private static final Pattern DOT_RUN = Pattern.compile("\\.{2,}");
+    private static final Pattern EDGE = Pattern.compile("^[.\\-]+|[.\\-]+$");
+
     /** Builds a key from a server address, falling back to {@link #LOCAL}. */
     public static String fromAddress(String address) {
-        if (address == null) return LOCAL;
-        String value = UNSAFE.matcher(address.strip().toLowerCase(Locale.ROOT)).replaceAll("");
+        return sanitise(address);
+    }
+
+    /** True when {@code key} is already in normal form, so reads and writes agree. */
+    public static boolean isValid(String key) {
+        return key != null && !key.isEmpty() && key.equals(sanitise(key));
+    }
+
+    /**
+     * Normalises an untrusted address or a key read from disk. Everything that is not
+     * part of a host name or port is dropped, repeated dots collapse, and a key that
+     * has nothing left in it becomes {@link #LOCAL} rather than an empty bucket name.
+     */
+    public static String sanitise(String key) {
+        if (key == null) return LOCAL;
+        String value = UNSAFE.matcher(key.strip().toLowerCase(Locale.ROOT)).replaceAll("");
+        value = EDGE.matcher(DOT_RUN.matcher(value).replaceAll(".")).replaceAll("");
         if (value.isEmpty() || value.equals("localhost") || value.equals("127.0.0.1")) return LOCAL;
         return value.length() > MAX_LENGTH ? value.substring(0, MAX_LENGTH) : value;
-    }
-
-    /** True when {@code key} is a value this class could have produced. */
-    public static boolean isValid(String key) {
-        if (key == null || key.isEmpty() || key.length() > MAX_LENGTH) return false;
-        return LOCAL.equals(key) || !UNSAFE.matcher(key).find();
-    }
-
-    /** Normalises an untrusted key read from disk back into a safe one. */
-    public static String sanitise(String key) {
-        return isValid(key) ? key : LOCAL;
     }
 }

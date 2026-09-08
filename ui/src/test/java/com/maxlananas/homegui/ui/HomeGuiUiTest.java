@@ -4,7 +4,6 @@ import com.maxlananas.homegui.core.ConfigStore;
 import com.maxlananas.homegui.core.Home;
 import com.maxlananas.homegui.core.HomesController;
 import com.maxlananas.homegui.core.Preferences;
-import com.maxlananas.homegui.core.RequestState;
 import com.maxlananas.homegui.core.SortMode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -188,7 +187,7 @@ class HomeGuiUiTest {
     }
 
     @Test
-    void arrowKeysScrollTheFocusedRowIntoView() {
+    void arrowKeysReachPastTheEndOfTheVisibleWindow() {
         String[] names = new String[60];
         for (int i = 0; i < names.length; i++) names[i] = "home" + i;
         receive(names);
@@ -197,6 +196,12 @@ class HomeGuiUiTest {
             ui.keyPressed(HomeGuiUi.Keys.DOWN, false, false);
         }
         assertTrue(ui.scroll() > 0, "the list followed the focus");
+        assertEquals("home." + (ui.visibleRows() + 3), ui.surface().focusedId());
+
+        for (int i = 0; i < 200; i++) ui.keyPressed(HomeGuiUi.Keys.DOWN, false, false);
+        assertEquals("home.59", ui.surface().focusedId(), "the last home is reachable");
+        ui.keyPressed(HomeGuiUi.Keys.UP, false, false);
+        assertEquals("home.58", ui.surface().focusedId());
     }
 
     @Test
@@ -266,7 +271,7 @@ class HomeGuiUiTest {
     void clickingAHomeSendsTheCommandAndCloses() {
         receive("base", "farm");
         assertTrue(ui.activate("home.0"));
-        assertEquals(List.of("home base"), sender.sent);
+        assertEquals(List.of("homes", "home base"), sender.sent);
         assertEquals(1, host.closes);
     }
 
@@ -288,11 +293,10 @@ class HomeGuiUiTest {
     }
 
     @Test
-    void refreshSendsTheListCommandAgain() {
+    void refreshAsksTheBridgeToRequestTheListAgain() {
         receive("base");
         ui.activate("refresh");
-        assertEquals(2, sender.sent.size());
-        assertEquals(RequestState.LOADING, homes.request().state());
+        assertEquals(1, host.refreshes, "the bridge owns sending /homes, not the interface");
     }
 
     @Test

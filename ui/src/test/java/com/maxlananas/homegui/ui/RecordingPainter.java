@@ -7,12 +7,21 @@ import java.util.List;
 final class RecordingPainter implements Painter {
 
     final List<String> operations = new ArrayList<>();
+    final List<int[]> rects = new ArrayList<>();
     int fills;
 
     @Override
     public void fill(int x, int y, int width, int height, int argb) {
         fills++;
+        rects.add(new int[]{x, y, width, height});
         operations.add("fill");
+    }
+
+    /** Total painted area, so scaling can be asserted without counting pixels by hand. */
+    int area() {
+        int total = 0;
+        for (int[] rect : rects) total += rect[2] * rect[3];
+        return total;
     }
 
     @Override
