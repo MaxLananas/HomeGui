@@ -139,8 +139,19 @@ class ServerKeyTest {
         assertTrue(ServerKey.isValid("play.example.net"));
         assertTrue(ServerKey.isValid(ServerKey.LOCAL));
         assertFalse(ServerKey.isValid("../escape"));
+        assertFalse(ServerKey.isValid("Play.Example.Net"), "case is part of the normal form");
         assertFalse(ServerKey.isValid(""));
         assertFalse(ServerKey.isValid(null));
+        assertEquals(ServerKey.LOCAL, ServerKey.sanitise("../escape"),
+                "a stored key that is not normal is not silently repaired into another bucket");
+    }
+
+    @Test
+    void repairingAnAddressAndRejectingAKeyAreDifferentOperations() {
+        assertEquals("escape", ServerKey.normalise("../escape"));
         assertEquals(ServerKey.LOCAL, ServerKey.sanitise("../escape"));
+        assertEquals("play.example.net:25565", ServerKey.normalise("Play.Example.Net:25565"));
+        assertEquals(ServerKey.LOCAL, ServerKey.normalise("..."));
+        assertEquals(ServerKey.LOCAL, ServerKey.normalise(null));
     }
 }

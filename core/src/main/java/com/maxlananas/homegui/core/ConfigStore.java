@@ -181,7 +181,8 @@ public final class ConfigStore {
     public String currentServer() { return currentServer; }
 
     public void setCurrentServer(String serverKey) {
-        currentServer = ServerKey.sanitise(serverKey);
+        // An address, not a stored key, so it is repaired rather than rejected.
+        currentServer = ServerKey.fromAddress(serverKey);
         server(currentServer).lastSeen = System.currentTimeMillis();
     }
 
@@ -469,7 +470,10 @@ public final class ConfigStore {
         int read = 0;
         for (Map.Entry<String, JsonElement> entry : root.entrySet()) {
             if (read >= MAX_SERVERS) break;
-            String key = entry.getKey();
+            // A hand edited file is repaired into the bucket it obviously meant rather
+            // than having its data thrown away.
+            String key = LEGACY_SERVER.equals(entry.getKey())
+                    ? LEGACY_SERVER : ServerKey.normalise(entry.getKey());
             if (!ServerKey.isValid(key) && !LEGACY_SERVER.equals(key)) continue;
             if (!entry.getValue().isJsonObject()) continue;
             JsonObject value = entry.getValue().getAsJsonObject();

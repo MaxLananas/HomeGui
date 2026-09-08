@@ -25,20 +25,30 @@ public final class ServerKey {
 
     /** Builds a key from a server address, falling back to {@link #LOCAL}. */
     public static String fromAddress(String address) {
-        return sanitise(address);
+        return normalise(address);
     }
 
     /** True when {@code key} is already in normal form, so reads and writes agree. */
     public static boolean isValid(String key) {
-        return key != null && !key.isEmpty() && key.equals(sanitise(key));
+        return key != null && !key.isEmpty() && key.equals(normalise(key));
     }
 
     /**
-     * Normalises an untrusted address or a key read from disk. Everything that is not
-     * part of a host name or port is dropped, repeated dots collapse, and a key that
-     * has nothing left in it becomes {@link #LOCAL} rather than an empty bucket name.
+     * Guards a key that did not come from this class. It is deliberately not repaired:
+     * a stored key that is not in normal form means the file was edited by hand or
+     * written by something else, and quietly renaming the bucket would either orphan
+     * that data or merge two servers into one. Such a key reads as {@link #LOCAL}.
      */
     public static String sanitise(String key) {
+        return isValid(key) ? key : LOCAL;
+    }
+
+    /**
+     * Repairs an untrusted address into a key. Everything that is not part of a host
+     * name or port is dropped, repeated dots collapse, and a value with nothing left
+     * in it becomes {@link #LOCAL} rather than an empty bucket name.
+     */
+    public static String normalise(String key) {
         if (key == null) return LOCAL;
         String value = UNSAFE.matcher(key.strip().toLowerCase(Locale.ROOT)).replaceAll("");
         value = EDGE.matcher(DOT_RUN.matcher(value).replaceAll(".")).replaceAll("");
