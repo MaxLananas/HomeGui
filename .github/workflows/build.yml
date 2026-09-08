@@ -29,7 +29,12 @@ jobs:
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v5
       - name: Run JUnit tests
-        run: ./gradlew :core:check :ui:check --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew :core:check :ui:check --no-daemon --stacktrace 2>&1 | tee build.log
+      - name: Report the failure
+        if: failure()
+        run: ./.github/report-failure.sh build.log
       - uses: actions/upload-artifact@v6
         if: failure()
         with:
@@ -67,20 +72,12 @@ jobs:
           ./gradlew :${{ matrix.module }}:build --no-daemon --stacktrace 2>&1 | tee build.log
       - name: Validate the artifact
         run: ./scripts/validate-artifacts.sh ${{ matrix.module }}
+      - name: Report the failure
+        if: failure()
+        run: ./.github/report-failure.sh build.log
       - uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.artifact }}
           path: artifacts/${{ matrix.module }}/build/libs/*.jar
           if-no-files-found: error
           retention-days: 14
-      - name: Report failure
-        if: failure()
-        run: |
-          echo '```text' >> "$GITHUB_STEP_SUMMARY"
-          tail -n 300 build.log >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          message=$(grep -E -A8 -B2 '(error:|FAILURE:|What went wrong:|Execution failed for task)' build.log | tail -c 30000 || true)
-          message=${message//'%'/'%25'}
-          message=${message//$'\r'/'%0D'}
-          message=${message//$'\n'/'%0A'}
-          echo "::error title=Gradle failure::$message"
