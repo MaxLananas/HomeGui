@@ -143,14 +143,19 @@ public final class HomeGuiRuntime implements UiHost {
         if (minecraft.player == null) return ServerKey.LOCAL;
         ServerData server = minecraft.getCurrentServer();
         if (server != null) return ServerKey.fromAddress(server.ip);
-        if (minecraft.isConnectedToRealms()) return "realms";
+        if (minecraft.isSingleplayer()) return ServerKey.LOCAL;
+        // Connected to something that is not in the server list: a Realms world or a
+        // direct connection. The client cannot see a per-world address for Realms, so
+        // every Realms world shares one bucket rather than being folded into the
+        // singleplayer data, which would be worse.
+        if (minecraft.getConnection() != null) return "realms";
         return ServerKey.LOCAL;
     }
 
     private static Position currentPosition(Minecraft minecraft) {
         var position = minecraft.player.position();
         return new Position(position.x, position.y, position.z,
-                minecraft.player.level().dimension().location().toString());
+                minecraft.player.level().dimension().identifier().toString());
     }
 
     private boolean send(String command) {
