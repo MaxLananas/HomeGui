@@ -31,8 +31,14 @@ fi
     echo '```'
 } >> "$SUMMARY"
 
+# Every javac error with its detail lines, not just the tail of the log: the first
+# error in a file is the one that explains the rest, and a tail cuts it off.
 MESSAGE=$(if [ -f "$LOG" ]; then
-    grep -E -B2 -A10 '(error:|warning: \[|FAILURE:|What went wrong:|Execution failed for task|Caused by:)' "$LOG" | tail -c 3000
+    {
+        grep -E -A4 '^[^ ]*\.java:[0-9]+: error:' "$LOG" | head -c 2400
+        echo
+        grep -E -A6 '(FAILURE:|What went wrong:|Execution failed for task)' "$LOG" | head -c 600
+    }
 else
     echo "no build log was produced"
 fi)

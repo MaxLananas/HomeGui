@@ -5,7 +5,9 @@ import com.maxlananas.homegui.ui.UiElement;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 import java.util.LinkedHashMap;
@@ -75,13 +77,19 @@ public final class HomeGuiScreen extends Screen {
             return true;
         }
         HomeGuiUi ui = runtime.ui();
-        if (ui.keyPressed(event.key(), hasControlDown(), hasShiftDown())) {
+        if (ui.keyPressed(event.key(), hasControl(event.modifiers()), hasShift(event.modifiers()))) {
             syncFocus();
             return true;
         }
-        if (ui.searchKey(event.key(), hasControlDown())) return true;
+        if (ui.searchKey(event.key(), hasControl(event.modifiers()))) return true;
         return super.keyPressed(event);
     }
+
+    // GLFW modifier bits. Screen's hasControlDown()/hasShiftDown() helpers are gone in
+    // this generation, and reading the bits off the event keeps the bridge off LWJGL.
+    private static boolean hasControl(int modifiers) { return (modifiers & 0x0002) != 0; }
+
+    private static boolean hasShift(int modifiers) { return (modifiers & 0x0001) != 0; }
 
     /** Pressing the (possibly rebound) open key again closes the interface. */
     private boolean matchesOpenKey(KeyEvent event) {
@@ -90,15 +98,19 @@ public final class HomeGuiScreen extends Screen {
     }
 
     @Override
-    public boolean charTyped(char character, int modifiers) {
-        return runtime.ui().charTyped(character) || super.charTyped(character, modifiers);
+    public boolean charTyped(CharacterEvent event) {
+        return runtime.ui().charTyped((char) event.codepoint()) || super.charTyped(event);
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        runtime.ui().notePress((int) mouseX, (int) mouseY, button);
-        if (button != 0 && runtime.ui().mouseClicked((int) mouseX, (int) mouseY, button)) return true;
-        return super.mouseClicked(mouseX, mouseY, button);
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubled) {
+        // The pressed state has to be recorded before the widgets handle the click, so
+        // the frame that follows the press already shows it.
+        int x = (int) event.x();
+        int y = (int) event.y();
+        runtime.ui().notePress(x, y, event.button());
+        if (event.button() != 0 && runtime.ui().mouseClicked(x, y, event.button())) return true;
+        return super.mouseClicked(event, doubled);
     }
 
     @Override
@@ -111,8 +123,4 @@ public final class HomeGuiScreen extends Screen {
         runtime.close();
     }
 
-    @Override
-    public boolean isPauseScreen() {
-        return false;
-    }
 }

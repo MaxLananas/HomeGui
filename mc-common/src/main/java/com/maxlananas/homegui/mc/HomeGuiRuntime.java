@@ -192,7 +192,7 @@ public final class HomeGuiRuntime implements UiHost {
     @Override
     public void announce(String message) {
         try {
-            Minecraft.getInstance().getNarrator().say(message, true);
+            Minecraft.getInstance().getNarrator().saySystemNow(message);
         } catch (Throwable ignored) {
             // narration is a courtesy, never a requirement
         }
