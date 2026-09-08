@@ -202,7 +202,8 @@ public final class ConfigStore {
 
     public Preferences preferences() { return preferences; }
 
-    public void savePreferences() { save(); }
+    /** Persists preferences; the caller can tell the user if the write failed. */
+    public boolean savePreferences() { return save(); }
 
     // ----------------------------------------------------------- favourites
 
