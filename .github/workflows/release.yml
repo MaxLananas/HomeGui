@@ -79,6 +79,18 @@ jobs:
       # announced until the files are confirmed to exist on Modrinth. Until that is
       # wired up and verified, publishing is a manual step and the draft above stays
       # the only claim this workflow makes.
+      # Publishes to Modrinth with the loader and Minecraft versions this artifact was
+      # actually built for. The token is only ever read from the environment by the
+      # plugin; it is never echoed, and it is never written into the build files.
+      - name: Publish to Modrinth
+        id: modrinth
+        env:
+          MODRINTH_API_KEY: ${{ secrets.MODRINTH_API_KEY }}
+        run: |
+          set -o pipefail
+          test -n "$MODRINTH_API_KEY" || { echo "MODRINTH_API_KEY is not configured"; exit 1; }
+          ./gradlew publishMods --no-daemon --stacktrace 2>&1 | tee publish.log
+
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -86,10 +98,13 @@ jobs:
 
       - name: Report the failure
         if: failure()
-        run: ./.github/report-failure.sh build.log
+        run: ./.github/report-failure.sh "${{ steps.modrinth.outcome == 'failure' && 'publish.log' || 'build.log' }}"
 
+      # A release is only announced once both destinations have it. If Modrinth
+      # failed, the draft is removed so GitHub is not claiming something Modrinth
+      # does not have.
       - name: Remove unpublished draft after a failed upload
-        if: failure() && steps.draft.outcome == 'success'
+        if: failure() && steps.draft.outcome == 'success' && steps.modrinth.outcome != 'success'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release delete "v$VERSION" --cleanup-tag --yes

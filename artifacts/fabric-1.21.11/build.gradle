@@ -1,6 +1,7 @@
 plugins {
     id 'fabric-loom' version "${loom_version}"
     id 'java'
+    id "me.modmuss50.mod-publish-plugin" version "2.2.0"
 }
 
 def minecraftVersion = project.mc_1_21_11
@@ -122,5 +123,45 @@ tasks.register("apiProbe") {
             println "::notice title=${className}::" +
                     body.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A").take(MAX_NOTICE)
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Publication. The token comes from the environment and is never written into the
+// build; without it the task is skipped rather than failing, so a local build does
+// not need Modrinth credentials.
+// ---------------------------------------------------------------------------
+def changelogFor = { String version ->
+    def file = rootProject.file("CHANGELOG.md")
+    if (!file.exists()) return "HomeGui ${version}"
+    def text = file.text
+    int start = text.indexOf("## ${version}")
+    if (start < 0) return "HomeGui ${version}"
+    int end = text.indexOf("\n## ", start + 1)
+    return (end < 0 ? text.substring(start) : text.substring(start, end)).trim()
+}
+
+publishMods {
+    // The remapped JAR is the file a player installs, and the same file the artifact
+    // validator has already accepted.
+    file = remapJar.archiveFile
+    displayName = "HomeGui ${project.mod_version} for Fabric ${minecraftVersion}"
+    changelog = changelogFor(project.mod_version.toString())
+    type = STABLE
+    modLoaders.add(loaderName)
+
+    modrinth {
+        projectId = project.modrinth_project_id.toString()
+        accessToken = providers.environmentVariable("MODRINTH_API_KEY")
+        minecraftVersions.add(minecraftVersion.toString())
+        requires("fabric-api")
+    }
+}
+
+tasks.named("publishMods").configure {
+    onlyIf {
+        def present = System.getenv("MODRINTH_API_KEY")?.trim()
+        if (!present) logger.lifecycle("MODRINTH_API_KEY is not set; not publishing.")
+        return present != null
     }
 }
