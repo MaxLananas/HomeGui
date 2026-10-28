@@ -28,6 +28,8 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-disabled: true
       - name: Run JUnit tests
         run: |
           set -o pipefail
@@ -46,7 +48,7 @@ jobs:
             core/build/reports/tests
             ui/build/reports/tests
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 1
 
   # One job per published artifact, grouped by API generation so that a whole
   # generation can be dropped or added by editing a single matrix entry.
@@ -69,6 +71,8 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
       - uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-disabled: true
       - name: Build
         run: |
           set -o pipefail
@@ -83,4 +87,4 @@ jobs:
           name: ${{ matrix.artifact }}
           path: artifacts/${{ matrix.module }}/build/libs/*.jar
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 1
