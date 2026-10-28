@@ -4,7 +4,8 @@
 set -euo pipefail
 module=${1:?target module required}
 log=client-smoke.log
-export ALSOFT_DRIVERS=null LIBGL_ALWAYS_SOFTWARE=1
+export ALSOFT_DRIVERS=null LIBGL_ALWAYS_SOFTWARE=1 SDL_VIDEO_FORCE_EGL=1
+export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Dhomegui.smoke=true"
 (timeout -k 10s 240s xvfb-run -a ./gradlew -Ptarget="$module" ":$module:runClient" --no-daemon --console=plain >"$log" 2>&1) &
 pid=$!
 ok=false
@@ -12,7 +13,7 @@ for ((i=0; i<240; i++)); do
     if grep -q 'Sound engine started' "$log"; then
         # Give deferred startup errors a chance to appear.
         sleep 10
-        if kill -0 "$pid" 2>/dev/null && ! grep -Eq 'Mixin apply for mod homegui failed|MixinApplyError|InvalidInjectionException|---- Minecraft Crash Report ----' "$log"; then
+        if grep -q "HomeGui smoke: network mixin target loaded" "$log" && kill -0 "$pid" 2>/dev/null && ! grep -Eq 'Mixin apply for mod homegui failed|MixinApplyError|InvalidInjectionException|---- Minecraft Crash Report ----' "$log"; then
             ok=true
         fi
         break

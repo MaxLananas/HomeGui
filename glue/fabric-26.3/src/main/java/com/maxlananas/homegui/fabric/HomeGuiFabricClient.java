@@ -28,6 +28,17 @@ public final class HomeGuiFabricClient implements ClientModInitializer {
         HomeGuiRuntime.initialize(FabricLoader.getInstance().getConfigDir());
         HomeGuiRuntime runtime = HomeGuiRuntime.get();
 
+        // Smoke tests force the network class to load so its command mixin is
+        // applied even before joining a world. Never runs in installed builds.
+        if (FabricLoader.getInstance().isDevelopmentEnvironment() && Boolean.getBoolean("homegui.smoke")) {
+            try {
+                Class.forName("net.minecraft.client.multiplayer.ClientPacketListener");
+                LOGGER.info("HomeGui smoke: network mixin target loaded");
+            } catch (ClassNotFoundException e) {
+                throw new IllegalStateException("HomeGui smoke: network target missing", e);
+            }
+        }
+
         KeyMapping openKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "key.homegui.open_gui",
                 InputConstants.Type.KEYBOARD,
