@@ -96,8 +96,9 @@ Minecraft pair.
 ## Experimental Fabric 26.x builds
 
 The 26.1, 26.1.1, 26.1.2, 26.2 and 26.3 builds are experimental. They
-have compiled and passed structural artifact validation, but have not been tested
-in Minecraft. Use Java 25, Fabric Loader 0.19.5 or later and the Fabric API for
+have compiled, passed structural artifact validation and started a development
+Minecraft client in CI. Server interaction, the UI and compatibility with other
+mods have not been tested. Use Java 25, Fabric Loader 0.19.5 or later and the Fabric API for
 your exact Minecraft version. Back up your worlds and configuration before testing.
 
 Build a single target (for example 26.3) using a Java 25 Gradle JVM:

@@ -1,8 +1,11 @@
 # In-game smoke test
 
-This is the gate between "built and validated in CI" and "tested in game". It cannot
-be automated: it needs a real client, a real display and a real server. Run it against
-every target before that target is published, and record the result at the bottom.
+This is the gate between "built and validated in CI" and a full in-game test. CI
+also starts the 26.x development clients under a virtual display via
+`scripts/smoke-client.sh`, checking startup and the command mixin target. That
+smoke test does not join a world, exercise the interface or prove compatibility
+with other mods. Run the full checklist against every target before a stable release,
+and record the result at the bottom.
 
 Budget about fifteen minutes per target. Every step has an expected result; a step
 that merely does not crash is a failure if the expected result did not appear.
