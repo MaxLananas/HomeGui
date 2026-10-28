@@ -25,6 +25,12 @@ wait "$pid" 2>/dev/null || true
 if [[ "$ok" != true ]]; then
     echo 'Minecraft startup smoke test failed or did not reach sound engine startup.'
     tail -n 100 "$log"
+    # The Actions API exposes annotations even where raw job logs are unavailable.
+    detail=$(tail -n 80 "$log" | tail -c 24000)
+    detail=${detail//'%'/'%25'}
+    detail=${detail//$'\r'/'%0D'}
+    detail=${detail//$'\n'/'%0A'}
+    echo "::error title=Minecraft startup::${detail}"
     exit 1
 fi
 echo 'Minecraft reached sound engine startup with HomeGui and no detected mixin failure.'

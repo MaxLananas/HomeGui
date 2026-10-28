@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: [main, arena/9e38f821-homegui]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
