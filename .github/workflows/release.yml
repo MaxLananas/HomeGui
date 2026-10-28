@@ -40,6 +40,13 @@ jobs:
         with:
           cache-disabled: true
 
+      # 26.x targets are experimental and require separate Gradle invocations.
+      # Do not silently publish a stable release containing only 1.21.11.
+      - name: Guard incomplete multi-target release
+        run: |
+          echo "Stable 26.x publication is not configured or tested in game."
+          exit 1
+
       - name: Validate release inputs
         env:
           CONFIRMED_VERSION: ${{ inputs.confirm_version }}

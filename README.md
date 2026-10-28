@@ -92,3 +92,21 @@ what they did.
 Minecraft dependency, which is what makes them testable. `mc-common` and `mc-modern`
 are the bridge, and `artifacts/<module>` assembles one release JAR per loader and
 Minecraft pair.
+
+## Experimental Fabric 26.x builds
+
+The 26.1, 26.1.1, 26.1.2, 26.2 and 26.3 builds are experimental. They
+have compiled and passed structural artifact validation, but have not been tested
+in Minecraft. Use Java 25, Fabric Loader 0.19.5 or later and the Fabric API for
+your exact Minecraft version. Back up your worlds and configuration before testing.
+
+Build a single target (for example 26.3) using a Java 25 Gradle JVM:
+
+```sh
+./gradlew -Ptarget=fabric-26.3 :fabric-26.3:build
+./scripts/validate-artifacts.sh fabric-26.3
+```
+
+Replace `26.3` with the desired target. The default target remains 1.21.11.
+Each target must be built separately. Stable release automation remains blocked
+until multi-target publication and in-game testing have been completed.

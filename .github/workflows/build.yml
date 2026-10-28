@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: [main, arena/9e38f821-homegui]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -94,27 +94,3 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  experimental-release:
-    name: Publish experimental 26.x jars
-    if: github.event_name == 'push' && github.ref == 'refs/heads/arena/9e38f821-homegui'
-    needs: [core, artifacts]
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v7
-        with:
-          pattern: fabric-26.*
-          path: dist
-          merge-multiple: true
-      - name: Publish prerelease
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          COMMIT: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          for version in 26.1 26.1.1 26.1.2 26.2 26.3; do
-            test -f "dist/homegui-4.2.0-fabric-${version}.jar"
-          done
-          gh release create v4.2.0-beta.1 dist/*.jar --target "$COMMIT" --prerelease --title 'HomeGui 4.2.0 beta — Fabric 26.x' --notes 'Experimental builds for Minecraft 26.1, 26.1.1, 26.1.2, 26.2 and 26.3. Compiled and structurally validated in CI; not tested in Minecraft. Requires Java 25, Fabric Loader 0.19.5 or newer, and the matching Fabric API. Back up your configuration and worlds before testing. Please report crashes with the Minecraft version and full log.'
