@@ -143,7 +143,7 @@ public final class HomeGuiRuntime implements UiHost {
         if (minecraft.player == null) return ServerKey.LOCAL;
         ServerData server = minecraft.getCurrentServer();
         if (server != null) return ServerKey.fromAddress(server.ip);
-        if (minecraft.isSingleplayer()) return ServerKey.LOCAL;
+        if (ScreenAccess.isSingleplayer(minecraft)) return ServerKey.LOCAL;
         // Connected to something that is not in the server list: a Realms world or a
         // direct connection. The client cannot see a per-world address for Realms, so
         // every Realms world shares one bucket rather than being folded into the
@@ -218,7 +218,7 @@ public final class HomeGuiRuntime implements UiHost {
     private static final class MinecraftTranslations implements Localization.Source {
         @Override
         public boolean has(String key) {
-            return I18n.exists(key);
+            return ScreenAccess.hasTranslation(key);
         }
 
         @Override

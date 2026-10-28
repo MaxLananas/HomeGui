@@ -7,4 +7,6 @@ final class ScreenAccess {
     static void setScreen(Minecraft minecraft, Screen screen) {
         minecraft.setScreen(screen);
     }
+    static boolean isSingleplayer(Minecraft minecraft) { return minecraft.isSingleplayer(); }
+    static boolean hasTranslation(String key) { return net.minecraft.client.resources.language.I18n.exists(key); }
 }

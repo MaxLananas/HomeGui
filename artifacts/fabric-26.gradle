@@ -8,7 +8,7 @@ sourceSets.main.java.srcDirs += [
         "${rootDir}/ui/src/main/java",
         "${rootDir}/mc-26/src/main/java",
         "${rootDir}/mc-screen/${screenGeneration}/src/main/java",
-        "${rootDir}/glue/fabric-26/src/main/java",
+        "${rootDir}/glue/${minecraftVersion == "26.3" ? "fabric-26.3" : "fabric-26"}/src/main/java",
 ]
 sourceSets.main.resources.srcDirs += [
         "${rootDir}/shared/src/main/resources",
