@@ -84,6 +84,9 @@ jobs:
           ./gradlew -Ptarget=${{ matrix.module }} :${{ matrix.module }}:build --no-daemon --stacktrace 2>&1 | tee build.log
       - name: Validate the artifact
         run: ./scripts/validate-artifacts.sh ${{ matrix.module }}
+      - name: Install software rendering dependencies (26.3)
+        if: matrix.module == 'fabric-26.3'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libegl1 libegl-mesa0 mesa-vulkan-drivers
       - name: Start Minecraft (26.x)
         if: startsWith(matrix.module, 'fabric-26.')
         run: ./scripts/smoke-client.sh ${{ matrix.module }}

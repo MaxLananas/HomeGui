@@ -17,4 +17,5 @@ jobs:
       - uses: gradle/actions/setup-gradle@v5
         with:
           cache-disabled: true
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq libegl1 libegl-mesa0 mesa-vulkan-drivers
       - run: ./scripts/smoke-client.sh fabric-26.3
