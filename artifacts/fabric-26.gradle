@@ -6,8 +6,7 @@ base { archivesName = project.mod_id }
 sourceSets.main.java.srcDirs += [
         "${rootDir}/core/src/main/java",
         "${rootDir}/ui/src/main/java",
-        "${rootDir}/mc-common/src/main/java",
-        "${rootDir}/mc-modern/src/main/java",
+        "${rootDir}/mc-26/src/main/java",
         "${rootDir}/mc-screen/${screenGeneration}/src/main/java",
         "${rootDir}/glue/fabric-26/src/main/java",
 ]

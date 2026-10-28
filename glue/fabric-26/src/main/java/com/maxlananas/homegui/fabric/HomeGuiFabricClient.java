@@ -8,7 +8,6 @@ import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
-import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +30,7 @@ public final class HomeGuiFabricClient implements ClientModInitializer {
         KeyMapping openKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "key.homegui.open_gui",
                 InputConstants.Type.KEYSYM,
-                GLFW.GLFW_KEY_H,
+                72,
                 new KeyMapping.Category(Identifier.fromNamespaceAndPath("homegui", "category.main"))));
         runtime.setOpenKey(openKey);
 
