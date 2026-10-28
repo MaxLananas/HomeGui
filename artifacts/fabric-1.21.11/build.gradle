@@ -21,6 +21,7 @@ sourceSets.main.java.srcDirs += [
         "${rootDir}/ui/src/main/java",
         "${rootDir}/mc-common/src/main/java",
         "${rootDir}/mc-modern/src/main/java",
+        "${rootDir}/mc-screen/legacy/src/main/java",
         "${rootDir}/glue/fabric-modern/src/main/java",
 ]
 sourceSets.main.resources.srcDirs += [

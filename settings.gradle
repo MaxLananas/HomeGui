@@ -19,5 +19,10 @@ include("ui")
 // One module per published artifact. Sources for a Minecraft generation are shared
 // by adding ../mc-<generation>/src/main/java to the module's source set, so Fabric
 // and NeoForge of the same generation compile the same interface code.
-include("fabric-1.21.11")
-project(":fabric-1.21.11").projectDir = file("artifacts/fabric-1.21.11")
+// Select exactly one Minecraft generation per invocation: Loom's remapping and
+// unobfuscated plugins are not configured together in the same Gradle build.
+def target = providers.gradleProperty("target").getOrElse("fabric-1.21.11")
+def targets = ["fabric-1.21.11", "fabric-26.1", "fabric-26.1.1", "fabric-26.1.2", "fabric-26.2", "fabric-26.3"]
+if (!targets.contains(target)) throw new GradleException("Unknown target: ${target}")
+include(target)
+project(":${target}").projectDir = file("artifacts/${target}")

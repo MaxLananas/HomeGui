@@ -105,7 +105,7 @@ public final class HomeGuiRuntime implements UiHost {
         syncServer(minecraft);
         homes.requestHomes();
         ui.resize(minecraft.getWindow().getGuiScaledWidth(), minecraft.getWindow().getGuiScaledHeight());
-        minecraft.setScreen(new HomeGuiScreen(this));
+        ScreenAccess.setScreen(minecraft, new HomeGuiScreen(this));
     }
 
     /** Called once per client tick. */
@@ -187,7 +187,7 @@ public final class HomeGuiRuntime implements UiHost {
 
     @Override
     public void close() {
-        Minecraft.getInstance().setScreen(null);
+        ScreenAccess.setScreen(Minecraft.getInstance(), null);
     }
 
     @Override
