@@ -12,7 +12,7 @@ sourceSets.main.java.srcDirs += [
 ]
 sourceSets.main.resources.srcDirs += [
         "${rootDir}/shared/src/main/resources",
-        "${rootDir}/mc-common/src/main/resources",
+        "${rootDir}/mc-26/src/main/resources",
         "${rootDir}/artifacts/fabric-1.21.11/src/main/resources",
 ]
 repositories { mavenCentral() }
