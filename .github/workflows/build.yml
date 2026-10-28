@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: [main]
+    branches: [main, arena/9e38f821-homegui]
   pull_request:
   workflow_dispatch:
 
@@ -100,3 +100,39 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+
+  experimental-release:
+    name: Publish fixed experimental 26.x jars
+    if: github.event_name == 'push' && github.ref == 'refs/heads/arena/9e38f821-homegui'
+    needs: [core, artifacts]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: fabric-26.*
+          path: dist
+          merge-multiple: true
+      - name: Publish prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for version in 26.1 26.1.1 26.1.2 26.2 26.3; do
+            test -f "dist/homegui-4.2.1-fabric-${version}.jar"
+          done
+          gh release create v4.2.1-beta.1 dist/*.jar --target "$COMMIT" --prerelease --title 'HomeGui 4.2.1 beta — Fabric 26.x' --notes 'Fixes the 26.2 startup crash caused by an obsolete chat mixin. Each 26.x client started in a CI development environment with HomeGui, including forced loading of the network mixin target. Server interaction, UI and compatibility with other mods have not been tested. Requires Java 25, Fabric Loader 0.19.5 or newer and Fabric API for your Minecraft version. Back up your configuration and worlds before testing.'
+      - name: Remove temporary Actions artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$GH_REPO/actions/artifacts?per_page=100" --jq '.artifacts[].id' > "$RUNNER_TEMP/artifact-ids"
+          while read -r id; do
+            gh api --method DELETE "repos/$GH_REPO/actions/artifacts/$id"
+          done < "$RUNNER_TEMP/artifact-ids"
