@@ -29,7 +29,7 @@ public final class HomeGuiFabricClient implements ClientModInitializer {
 
         KeyMapping openKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "key.homegui.open_gui",
-                InputConstants.KEYBOARD,
+                InputConstants.Type.KEYBOARD,
                 72,
                 new KeyMapping.Category(Identifier.fromNamespaceAndPath("homegui", "category.main"))));
         runtime.setOpenKey(openKey);
